@@ -16,6 +16,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
 <script>
 var firebaseConfig={apiKey:"AIzaSyACPluMqE03cRqaHtOwouogaWEqKgw4Zxw",authDomain:"sahil-dispatch.firebaseapp.com",projectId:"sahil-dispatch",storageBucket:"sahil-dispatch.firebasestorage.app",messagingSenderId:"508622975937",appId:"1:508622975937:web:3751db53e06d3c0d233540"};
 try{firebase.initializeApp(firebaseConfig);window.FB={db:firebase.firestore(),auth:firebase.auth(),_ok:false};FB.ready=FB.auth.signInAnonymously().then(function(){return true;}).catch(function(e){console.error('FB auth',e);return false;});}catch(e){console.error('FB init',e);}
@@ -266,12 +267,13 @@ function renderDriver(){
   }).join('')||'<div class="empty">'+t.noDone+'</div>';
 }
 function driverSet(uid,status){
-  DTRIPS.forEach(function(o){if(o.uid===uid)o.status=status;});renderDriver();
+  var route='';DTRIPS.forEach(function(o){if(o.uid===uid){o.status=status;route=o.route||'';}});renderDriver();
   if(window.FB&&FB._ok){var b=FB.db.batch();
     b.update(FB.db.collection('order_driver').doc(uid),{status:status});
     b.update(FB.db.collection('orders').doc(uid),{status:status});
     b.update(FB.db.collection('order_company').doc(uid),{status:status});
     b.commit().catch(function(e){console.error('driverSet',e);});
+    pushTo('admin',null,'Trip '+uid+' · '+status,(driverName||'Driver')+(route?' · '+route:''));
   }
 }
 function startDriver(name){
@@ -288,7 +290,7 @@ function startDriver(name){
       var arr=[];snap.forEach(function(d){arr.push(d.data());});arr.sort(function(a,b){return uidN(b.uid)-uidN(a.uid);});DTRIPS=arr;renderDriver();driverLoaded=true;
     },function(e){console.error('driver trips',e);});
   } else {DTRIPS=MOCKTRIPS.slice();renderDriver();}
-  loadDocs();
+  loadDocs();initPush('driver',name);
 }
 function showBad(){var i=document.getElementById('loginKey');i.classList.add('bad');document.getElementById('loginErr').textContent=L().lBad;setTimeout(function(){i.classList.remove('bad');},400);}
 function finishLogin(code,name){
@@ -337,7 +339,7 @@ function sendIssue(){
   var ta=document.getElementById('issueTxt'),txt=ta.value.trim();
   if(!txt){ta.style.borderColor='var(--rose)';setTimeout(function(){ta.style.borderColor='';},900);return;}
   var sel=document.querySelector('#opts .opt.sel'),type=sel?sel.textContent.trim():'';
-  if(window.FB&&FB._ok){FB.db.collection('issues').add({orderUid:issueUid||'',role:'driver',by:driverName||'',type:type,text:txt,status:'open',createdAt:firebase.firestore.FieldValue.serverTimestamp()}).catch(function(e){console.error('issue',e);});}
+  if(window.FB&&FB._ok){FB.db.collection('issues').add({orderUid:issueUid||'',role:'driver',by:driverName||'',type:type,text:txt,status:'open',createdAt:firebase.firestore.FieldValue.serverTimestamp()}).catch(function(e){console.error('issue',e);});pushTo('admin',null,'New issue · '+(issueUid||''),(driverName||'Driver')+': '+type);}
   document.getElementById('ov').classList.remove('show');ta.value='';
   dtoast(SENT[LANGS[li]]||SENT.en);
 }
@@ -349,6 +351,26 @@ function renderDocs(){var b=document.getElementById('docsBody');if(b)b.textConte
 function setDocTab(t){docTab=t;renderDocs();}
 function openDocs(){renderDocs();document.getElementById('docsov').classList.add('show');}
 document.getElementById('docsov').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
+/* push (FCM via Cloudflare worker) */
+var PUSH_VAPID='BBj7XnVEEapgR0fkDBS81nEzeYV52q7deOKJAQkJ9dieLqZT_nMrsvNo_BoTduX7quXoDcpfGJldug2wc02bttc';
+var WORKER_URL='https://sahil-push.nazimtariq74074.workers.dev/';
+function initPush(role,holder){
+  try{
+    if(!window.FB||!FB._ok||typeof firebase==='undefined'||!firebase.messaging||!('Notification' in window)||!navigator.serviceWorker)return;
+    var messaging=firebase.messaging();
+    Notification.requestPermission().then(function(perm){
+      if(perm!=='granted')return;
+      navigator.serviceWorker.ready.then(function(reg){
+        messaging.getToken({vapidKey:PUSH_VAPID,serviceWorkerRegistration:reg}).then(function(tok){
+          if(tok)FB.db.collection('tokens').doc(tok).set({role:role,holder:holder||'',ts:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+        }).catch(function(e){console.warn('getToken',e);});
+      });
+    });
+    messaging.onMessage(function(p){var n=p.notification||{};if(n.title)notify(n.title+(n.body?' — '+n.body:''));});
+  }catch(e){console.warn('initPush',e);}
+}
+function tokensFor(role,holder){var q=holder?FB.db.collection('tokens').where('holder','==',holder):FB.db.collection('tokens').where('role','==',role);return q.get().then(function(s){var t=[];s.forEach(function(d){var x=d.data();if(!role||x.role===role)t.push(d.id);});return t;}).catch(function(){return [];});}
+function pushTo(role,holder,title,body){if(!window.FB||!FB._ok||!WORKER_URL)return;tokensFor(role,holder).then(function(toks){if(toks.length)fetch(WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tokens:toks,title:title,body:body})}).catch(function(){});});}
 (function(){var r=document.documentElement,t='dark';try{t=localStorage.getItem('dispatch_theme')||'dark';}catch(e){}r.setAttribute('data-theme',t);document.getElementById('themeBtn').addEventListener('click',function(){var n=r.getAttribute('data-theme')==='light'?'dark':'light';r.setAttribute('data-theme',n);try{localStorage.setItem('dispatch_theme',n);}catch(e){}});})();
 setLang('en');
 </script>

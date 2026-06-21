@@ -16,6 +16,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
 <script>
 var firebaseConfig={apiKey:"AIzaSyACPluMqE03cRqaHtOwouogaWEqKgw4Zxw",authDomain:"sahil-dispatch.firebaseapp.com",projectId:"sahil-dispatch",storageBucket:"sahil-dispatch.firebasestorage.app",messagingSenderId:"508622975937",appId:"1:508622975937:web:3751db53e06d3c0d233540"};
 try{firebase.initializeApp(firebaseConfig);window.FB={db:firebase.firestore(),auth:firebase.auth(),_ok:false};FB.ready=FB.auth.signInAnonymously().then(function(){return true;}).catch(function(e){console.error('FB auth',e);return false;});}catch(e){console.error('FB init',e);}
@@ -640,10 +641,14 @@ function createOrder(){
   var status=ex0?ex0.status:(flag?'flag':'req');
   var confirmed=ex0?!!ex0.confirmed:false;
   var o={uid:uid,date:date,company:company,driver:driver,truck:truck,route:route,companyAmount:ca,driverRent:dr,extraKm:ex,advance:adv,notes:notes,flag:flag,status:status,confirmed:confirmed};
-  if(FBok()){writeOrder(o);}
+  var wasEdit=!!editingUid;
+  if(FBok()){writeOrder(o);
+    pushTo('driver',driver,wasEdit?('Order updated · '+uid):'New trip request',route);
+    pushTo('company',company,wasEdit?('Order updated · '+uid):'New order to confirm',route);
+  }
   else{var idx=-1;ORD.forEach(function(x,i){if(x.uid===uid)idx=i;});if(idx>=0)ORD[idx]=o;else ORD.unshift(o);renderDash();renderOrders();renderAttention();}
   document.getElementById('ov').classList.remove('show');
-  var wasEdit=!!editingUid;editingUid=null;
+  editingUid=null;
   saveToast(wasEdit?('Order '+uid+' updated · synced to both apps'):('Order '+uid+' created & sent to driver'));
 }
 
@@ -942,7 +947,27 @@ function subKeys(){
     arr.sort(function(a,b){return b._t-a._t;});KEYS=arr;updateSeg();renderKeys();renderDrivers();renderCompanies();
   },function(e){console.error('keys snapshot',e);});
 }
-if(window.FB&&FB.ready){FB.ready.then(function(ok){FB._ok=ok;if(ok){seedIfEmpty();subKeys();subOrders();subIssues();loadSettings();}else{console.warn('Firebase not ready — running on local mock data');}});}
+/* push (FCM via Cloudflare worker) */
+var PUSH_VAPID='BBj7XnVEEapgR0fkDBS81nEzeYV52q7deOKJAQkJ9dieLqZT_nMrsvNo_BoTduX7quXoDcpfGJldug2wc02bttc';
+var WORKER_URL='https://sahil-push.nazimtariq74074.workers.dev/';
+function initPush(role,holder){
+  try{
+    if(!window.FB||!FB._ok||typeof firebase==='undefined'||!firebase.messaging||!('Notification' in window)||!navigator.serviceWorker)return;
+    var messaging=firebase.messaging();
+    Notification.requestPermission().then(function(perm){
+      if(perm!=='granted')return;
+      navigator.serviceWorker.ready.then(function(reg){
+        messaging.getToken({vapidKey:PUSH_VAPID,serviceWorkerRegistration:reg}).then(function(tok){
+          if(tok)FB.db.collection('tokens').doc(tok).set({role:role,holder:holder||'',ts:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+        }).catch(function(e){console.warn('getToken',e);});
+      });
+    });
+    messaging.onMessage(function(p){var n=p.notification||{};if(n.title)notify(n.title+(n.body?' — '+n.body:''));});
+  }catch(e){console.warn('initPush',e);}
+}
+function tokensFor(role,holder){var q=holder?FB.db.collection('tokens').where('holder','==',holder):FB.db.collection('tokens').where('role','==',role);return q.get().then(function(s){var t=[];s.forEach(function(d){var x=d.data();if(!role||x.role===role)t.push(d.id);});return t;}).catch(function(){return [];});}
+function pushTo(role,holder,title,body){if(!FBok()||!WORKER_URL)return;tokensFor(role,holder).then(function(toks){if(toks.length)fetch(WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tokens:toks,title:title,body:body})}).catch(function(){});});}
+if(window.FB&&FB.ready){FB.ready.then(function(ok){FB._ok=ok;if(ok){seedIfEmpty();subKeys();subOrders();subIssues();loadSettings();initPush('admin','Office');}else{console.warn('Firebase not ready — running on local mock data');}});}
 </script>
 </body>
 </html>
