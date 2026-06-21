@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<title>Driver · Dispatch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&family=Noto+Naskh+Arabic:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+var firebaseConfig={apiKey:"AIzaSyACPluMqE03cRqaHtOwouogaWEqKgw4Zxw",authDomain:"sahil-dispatch.firebaseapp.com",projectId:"sahil-dispatch",storageBucket:"sahil-dispatch.firebasestorage.app",messagingSenderId:"508622975937",appId:"1:508622975937:web:3751db53e06d3c0d233540"};
+try{firebase.initializeApp(firebaseConfig);window.FB={db:firebase.firestore(),auth:firebase.auth(),_ok:false};FB.ready=FB.auth.signInAnonymously().then(function(){return true;}).catch(function(e){console.error('FB auth',e);return false;});}catch(e){console.error('FB init',e);}
+</script>
+<style>
+:root{--bg:#0b0c12;--panel:#14161f;--panel2:#191c27;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.13);
+  --txt:#eef0f6;--mut:#9aa0b4;--dim:#646b80;--acc:#7c6cff;--acc2:#9d7bff;
+  --green:#27c98f;--green2:#1fae7c;--amber:#fbbf24;--blue:#60a5fa;--cyan:#22d3ee;--rose:#fb7185;--orange:#fb923c;
+  --disp:'Plus Jakarta Sans',sans-serif;--body:'Inter',system-ui,sans-serif;}
+html[data-theme="light"]{--bg:#eef1f8;--panel:#ffffff;--panel2:#f4f6fc;--line:rgba(18,22,40,.09);--line2:rgba(18,22,40,.14);--txt:#13151f;--mut:#5b6276;--dim:#8b91a4;}
+html[dir="rtl"]{--body:'Noto Naskh Arabic','Inter',sans-serif;--disp:'Noto Naskh Arabic',sans-serif;}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--txt);font-family:var(--body);display:flex;justify-content:center;min-height:100vh}
+.app{width:100%;max-width:460px;min-height:100vh;border-left:1px solid var(--line);border-right:1px solid var(--line);display:flex;flex-direction:column}
+.hdr{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
+.hdr .mk{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--acc),var(--acc2));display:grid;place-items:center}
+.hdr .mk svg{width:21px;height:21px;color:#fff}
+.hdr .nm b{font:800 17px/1 var(--disp)}.hdr .nm span{display:block;font:600 11px/1 var(--body);color:var(--dim);margin-top:3px}
+.hdr .sp{margin-inline-start:auto;display:flex;gap:8px}
+.chip{border:1px solid var(--line2);background:var(--panel);color:var(--txt);border-radius:10px;height:38px;padding:0 12px;cursor:pointer;display:flex;align-items:center;gap:6px;font:700 13px/1 var(--body)}
+.icb{width:38px;height:38px;border:1px solid var(--line2);background:var(--panel);color:var(--mut);border-radius:10px;cursor:pointer;display:grid;place-items:center}
+.icb svg{width:18px;height:18px}.icb .moon{display:none}html[data-theme="light"] .icb .sun{display:none}html[data-theme="light"] .icb .moon{display:block}
+.body{flex:1;padding:16px;display:flex;flex-direction:column;gap:14px}
+
+/* incoming request */
+.req{background:linear-gradient(180deg,rgba(124,108,255,.16),var(--panel));border:1.5px solid var(--acc);border-radius:20px;padding:18px;box-shadow:0 14px 36px -16px rgba(124,108,255,.5)}
+.req .tag{display:inline-flex;align-items:center;gap:7px;font:800 12px/1 var(--body);letter-spacing:.04em;text-transform:uppercase;color:#cdc6ff;background:rgba(124,108,255,.2);padding:7px 12px;border-radius:20px}
+.req .tag .pls{width:8px;height:8px;border-radius:50%;background:var(--acc2);animation:pls 1.4s infinite}
+@keyframes pls{0%,100%{opacity:1}50%{opacity:.3}}
+.route{font:800 23px/1.2 var(--disp);margin:13px 0 4px}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin:11px 0}
+.meta span{font:600 12px/1 var(--body);color:var(--mut);background:var(--panel2);border:1px solid var(--line);padding:8px 11px;border-radius:10px}
+.rent{display:flex;align-items:center;justify-content:space-between;background:rgba(39,201,143,.1);border:1px solid rgba(39,201,143,.3);border-radius:14px;padding:13px 16px;margin:4px 0 14px}
+.rent .l{font:600 13px/1 var(--body);color:var(--mut)}.rent .v{font:800 21px/1 var(--disp);color:var(--green)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.big{border:0;cursor:pointer;font:800 17px/1 var(--disp);padding:17px;border-radius:15px;display:flex;align-items:center;justify-content:center;gap:9px}
+.big svg{width:20px;height:20px}
+.ok{background:linear-gradient(135deg,var(--green),var(--green2));color:#04130d}
+.no{background:var(--panel2);color:var(--rose);border:1.5px solid rgba(251,113,133,.4)}
+
+/* TABS */
+.tabs{display:flex;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:5px;position:sticky;top:71px;z-index:4}
+.tab{flex:1;border:0;background:none;color:var(--mut);cursor:pointer;font:700 14px/1 var(--disp);padding:12px 8px;border-radius:10px;display:flex;align-items:center;justify-content:center;gap:7px}
+.tab .c{font:700 11px/1 var(--body);background:var(--panel2);color:var(--dim);padding:3px 8px;border-radius:20px;min-width:22px}
+.tab.on{background:var(--acc);color:#fff}.tab.on .c{background:rgba(255,255,255,.25);color:#fff}
+.pane{display:none;flex-direction:column;gap:13px}.pane.on{display:flex}
+.empty{text-align:center;color:var(--dim);font:600 13px/1.5 var(--body);padding:40px 20px}
+
+/* trip card */
+.trip{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:15px;display:flex;flex-direction:column;gap:12px}
+.trip.glow{border-color:rgba(251,146,60,.4)}
+.trip .top{display:flex;align-items:center;gap:10px}
+.trip .uid{font:600 11px/1 ui-monospace,monospace;color:var(--dim)}
+.trip .pill{margin-inline-start:auto;font:700 11px/1 var(--body);padding:5px 9px;border-radius:20px;display:inline-flex;align-items:center;gap:5px}
+.trip .pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.p-acc{background:rgba(96,165,250,.15);color:var(--blue)}.p-load{background:rgba(251,146,60,.15);color:var(--orange)}.p-move{background:rgba(34,211,238,.15);color:var(--cyan)}.p-reach{background:rgba(155,135,245,.18);color:var(--acc2)}.p-done{background:rgba(39,201,143,.15);color:var(--green)}
+.trip .rt{font:800 18px/1.25 var(--disp)}
+.trip .sub{font:600 12.5px/1 var(--body);color:var(--mut);display:flex;gap:14px;flex-wrap:wrap}
+.trip .sub .g{color:var(--green);font-weight:800}
+.statbtn{border:0;cursor:pointer;font:800 16px/1 var(--disp);padding:15px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:9px;background:linear-gradient(135deg,var(--green),var(--green2));color:#04130d}
+.statbtn svg{width:20px;height:20px}
+.trow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.minibtn{border:1px solid var(--line2);background:var(--panel2);color:var(--txt);cursor:pointer;font:700 12.5px/1 var(--body);padding:12px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:7px}
+.minibtn svg{width:16px;height:16px}
+.minibtn.warn{color:var(--rose);border-color:rgba(251,113,133,.35)}
+.minibtn.call{color:var(--green)}
+.donerow{display:flex;align-items:center;gap:8px;font:600 12px/1 var(--body);color:var(--green)}
+.donerow svg{width:16px;height:16px}
+
+/* login */
+.login{position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;flex-direction:column}
+.login.hide{display:none}
+.login .ltop{display:flex;align-items:center;padding:16px 18px}
+.login .ltop .sp{margin-inline-start:auto;display:flex;gap:8px}
+.login .lmid{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:20px 26px}
+.login .lmk{width:74px;height:74px;border-radius:20px;background:linear-gradient(135deg,var(--acc),var(--acc2));display:grid;place-items:center;box-shadow:0 18px 40px -12px rgba(124,108,255,.6);margin-bottom:22px}
+.login .lmk svg{width:40px;height:40px;color:#fff}
+.login h1{font:800 26px/1.2 var(--disp)}
+.login .lsub{font:500 14px/1.6 var(--body);color:var(--mut);margin:10px 0 28px;max-width:300px}
+.login .kbox{width:100%;max-width:340px;display:flex;flex-direction:column;gap:11px}
+.login .kbox label{font:700 11px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--mut);text-align:start}
+.login .kin{width:100%;background:var(--panel);border:1.5px solid var(--line2);color:var(--txt);font:700 18px/1 ui-monospace,monospace;letter-spacing:.06em;text-align:center;text-transform:uppercase;padding:17px 14px;border-radius:14px;outline:none}
+.login .kin:focus{border-color:var(--acc)}
+.login .kin.bad{border-color:var(--rose);animation:shk .35s}
+@keyframes shk{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+.login .err{font:600 12.5px/1 var(--body);color:var(--rose);min-height:15px;text-align:center}
+.login .lbtn{width:100%;border:0;cursor:pointer;font:800 17px/1 var(--disp);padding:17px;border-radius:14px;background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;display:flex;align-items:center;justify-content:center;gap:9px}
+.login .lbtn svg{width:19px;height:19px}
+.login .demo{font:600 12.5px/1.5 var(--body);color:var(--dim);cursor:pointer;margin-top:8px;text-align:center}
+.login .demo b{color:var(--acc2)}
+.login .lfoot{padding:22px;text-align:center;font:600 12px/1.6 var(--body);color:var(--dim)}
+
+/* issue modal */
+.ov{position:fixed;inset:0;background:rgba(5,6,10,.66);z-index:30;display:none;align-items:flex-end;justify-content:center}
+.ov.show{display:flex}
+.sheet{width:100%;max-width:460px;background:var(--panel2);border-top-left-radius:24px;border-top-right-radius:24px;border:1px solid var(--line2);padding:22px;max-height:86vh;overflow:auto}
+.sheet h3{font:800 19px/1 var(--disp);margin-bottom:6px}.sheet p{font:500 12.5px/1.5 var(--body);color:var(--mut);margin-bottom:16px}
+.opts{display:flex;flex-direction:column;gap:9px;margin-bottom:14px}
+.opt{border:1px solid var(--line2);background:var(--panel);border-radius:12px;padding:13px 15px;font:600 14px/1 var(--body);cursor:pointer;display:flex;align-items:center;gap:10px}
+.opt.sel{border-color:var(--acc);background:rgba(124,108,255,.12);color:#cdc6ff}
+.opt .rd{width:18px;height:18px;border-radius:50%;border:2px solid var(--line2)}
+.opt.sel .rd{border-color:var(--acc);background:radial-gradient(circle,var(--acc) 40%,transparent 45%)}
+.sheet textarea{width:100%;background:var(--bg);border:1px solid var(--line2);color:var(--txt);font:500 14px/1.4 var(--body);padding:13px;border-radius:12px;min-height:80px;outline:none;resize:vertical}
+.sheet textarea:focus{border-color:var(--acc)}
+.req-note{font:600 11px/1 var(--body);color:var(--rose);margin:8px 2px 16px}
+.sheet .send{width:100%;border:0;cursor:pointer;font:800 16px/1 var(--disp);padding:16px;border-radius:14px;background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff}
+</style>
+</head>
+<body>
+<!-- LOGIN -->
+<div class="login" id="login">
+  <div class="ltop">
+    <div class="sp">
+      <button class="chip" id="loginLang">🌐 <span class="llang">EN</span></button>
+      <button class="icb" id="loginTheme"><svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg></button>
+    </div>
+  </div>
+  <div class="lmid">
+    <span class="lmk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h15v13H1zM16 8h4l3 3v5h-7M5.5 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM18.5 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></svg></span>
+    <h1 data-i="lWelcome">Driver App</h1>
+    <div class="lsub" data-i="lSub">Enter the access key your office gave you. Your trips set up automatically.</div>
+    <div class="kbox">
+      <label data-i="lLabel">Access key</label>
+      <input class="kin" id="loginKey" placeholder="SAN-DR-XXXX-XXXX" autocomplete="off" spellcheck="false" inputmode="text">
+      <div class="err" id="loginErr"></div>
+      <button class="lbtn" onclick="doLogin()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M5 12h14M13 6l6 6-6 6"/></svg> <span data-i="lEnter">Enter</span></button>
+      <div class="demo" onclick="useDemo()"><span data-i="lDemo">No key?</span> <b data-i="lDemoB">Try a demo key</b></div>
+    </div>
+  </div>
+  <div class="lfoot" data-i="lFoot">Sahil Al Nojoom · Transport Dispatch</div>
+</div>
+
+<div class="app">
+  <div class="hdr">
+    <span class="mk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h15v13H1zM16 8h4l3 3v5h-7M5.5 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM18.5 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></svg></span>
+    <div class="nm"><b>Dispatch</b><span data-i="role">Driver</span></div>
+    <div class="sp">
+      <button class="chip" id="langBtn">🌐 <span id="langLbl">EN</span></button>
+      <button class="icb" id="themeBtn"><svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg></button>
+      <button class="icb" id="logoutBtn" title="Log out" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>
+    </div>
+  </div>
+
+  <div class="body">
+    <div id="reqZone"></div>
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab on" data-tab="active"><span data-i="tabActive">Active</span> <span class="c" id="cActive">0</span></button>
+      <button class="tab" data-tab="done"><span data-i="tabDone">Completed</span> <span class="c" id="cDone">0</span></button>
+    </div>
+    <div class="pane on" id="p-active"></div>
+    <div class="pane" id="p-done"></div>
+  </div>
+</div>
+
+<!-- ISSUE SHEET -->
+<div class="ov" id="ov">
+  <div class="sheet">
+    <h3 data-i="reportTitle">Report a problem</h3>
+    <p data-i="reportSub">Pick what's wrong, then describe it (required).</p>
+    <div class="opts" id="opts"></div>
+    <textarea id="issueTxt" placeholder="Describe the issue… (required)"></textarea>
+    <div class="req-note" data-i="mandatory">⚠️ Writing the details is required.</div>
+    <button class="send" onclick="document.getElementById('ov').classList.remove('show')" data-i="sendIssue">Send to office</button>
+  </div>
+</div>
+
+<script>
+var I={
+ en:{role:"Driver",newReq:"New trip request",yourRent:"Your rent",accept:"Accept",reject:"Reject",tabActive:"Active",tabDone:"Completed",st_load:"Loaded",st_acc:"Accepted",st_reach:"Reached",st_done:"Completed",mark_move:'Mark "On the way"',mark_load:'Mark "Loaded"',mark_unload:'Mark "Unloaded"',problem:"Extra / Problem",call:"Call office",doneAt:"Unloaded · 19 Jun, 4:20 PM",doneAt2:"Unloaded · 19 Jun, 11:05 AM",reportTitle:"Report a problem",reportSub:"Pick what's wrong, then describe it (required).",mandatory:"⚠️ Writing the details is required.",sendIssue:"Send to office",issuePh:"Describe the issue… (required)",lWelcome:"Driver App",lSub:"Enter the access key your office gave you. Your trips set up automatically.",lLabel:"Access key",lEnter:"Enter",lDemo:"No key?",lDemoB:"Try a demo key",lFoot:"Sahil Al Nojoom · Transport Dispatch",lBad:"That key isn't valid. Check it and try again.",lPh:"SAN-DR-XXXX-XXXX",mark_reach:'Mark "Reached"',st_move:"On the way",lUsed:"This key is already used on the maximum number of devices.",noActive:"No active trips right now.",noDone:"No completed trips yet.",opts:["Extra delivery / extra KM","Wrong amount","Wrong destination","Wrong truck type","Truck / vehicle problem","This order is wrong","Other"]},
+ ur:{role:"ڈرائیور",newReq:"نئی ٹرپ",yourRent:"آپ کا کرایہ",accept:"قبول",reject:"منع",tabActive:"جاری",tabDone:"مکمل",st_load:"لوڈ ہو گیا",st_acc:"قبول",st_reach:"پہنچ گیا",st_done:"مکمل",mark_move:'"چل پڑی" لگائیں',mark_load:'"لوڈ ہو گیا" لگائیں',mark_unload:'"خالی ہو گیا" لگائیں',problem:"اضافی / مسئلہ",call:"دفتر کال",doneAt:"خالی ہوا · 19 جون، 4:20 PM",doneAt2:"خالی ہوا · 19 جون، 11:05 AM",reportTitle:"مسئلہ بتائیں",reportSub:"مسئلہ منتخب کریں، پھر تفصیل لکھیں (ضروری).",mandatory:"⚠️ تفصیل لکھنا ضروری ہے۔",sendIssue:"دفتر بھیجیں",issuePh:"مسئلہ لکھیں… (ضروری)",lWelcome:"ڈرائیور ایپ",lSub:"دفتر کی دی ہوئی رسائی کلید درج کریں۔ آپ کی ٹرپس خود سیٹ ہو جائیں گی۔",lLabel:"رسائی کلید",lEnter:"داخل ہوں",lDemo:"کلید نہیں؟",lDemoB:"ڈیمو کلید آزمائیں",lFoot:"ساحل النجوم · ٹرانسپورٹ ڈسپیچ",lBad:"یہ کلید درست نہیں۔ دوبارہ کوشش کریں۔",lPh:"SAN-DR-XXXX-XXXX",mark_reach:'"پہنچ گیا" لگائیں',st_move:"راستے میں",lUsed:"یہ کلید پہلے ہی زیادہ سے زیادہ ڈیوائسز پر استعمال ہو چکی ہے۔",noActive:"ابھی کوئی جاری ٹرپ نہیں۔",noDone:"ابھی کوئی مکمل ٹرپ نہیں۔",opts:["اضافی ڈلیوری / اضافی کلومیٹر","غلط رقم","غلط منزل","غلط ٹرک ٹائپ","ٹرک / گاڑی کا مسئلہ","یہ آرڈر غلط ہے","دیگر"]},
+ ar:{role:"سائق",newReq:"طلب رحلة جديدة",yourRent:"أجرتك",accept:"قبول",reject:"رفض",tabActive:"نشطة",tabDone:"مكتملة",st_load:"تم التحميل",st_acc:"مقبول",st_reach:"وصل",st_done:"مكتمل",mark_move:'تحديد "في الطريق"',mark_load:'تحديد "تم التحميل"',mark_unload:'تحديد "تم التفريغ"',problem:"إضافي / مشكلة",call:"اتصل بالمكتب",doneAt:"تم التفريغ · 19 يونيو، 4:20 م",doneAt2:"تم التفريغ · 19 يونيو، 11:05 ص",reportTitle:"الإبلاغ عن مشكلة",reportSub:"اختر المشكلة ثم اكتب التفاصيل (مطلوب).",mandatory:"⚠️ كتابة التفاصيل مطلوبة.",sendIssue:"إرسال إلى المكتب",issuePh:"اكتب المشكلة… (مطلوب)",lWelcome:"تطبيق السائق",lSub:"أدخل مفتاح الدخول الذي أعطاك إياه المكتب. ستُعد رحلاتك تلقائيًا.",lLabel:"مفتاح الدخول",lEnter:"دخول",lDemo:"لا يوجد مفتاح؟",lDemoB:"جرّب مفتاحًا تجريبيًا",lFoot:"ساحل النجوم · إرسال النقل",lBad:"هذا المفتاح غير صالح. حاول مرة أخرى.",lPh:"SAN-DR-XXXX-XXXX",mark_reach:'تحديد "وصل"',st_move:"في الطريق",lUsed:"تم استخدام هذا المفتاح بالفعل على الحد الأقصى من الأجهزة.",noActive:"لا توجد رحلات نشطة حاليًا.",noDone:"لا توجد رحلات مكتملة بعد.",opts:["توصيل إضافي / كيلومترات إضافية","مبلغ خاطئ","وجهة خاطئة","نوع شاحنة خاطئ","مشكلة في الشاحنة","هذا الطلب خاطئ","أخرى"]}
+};
+var LANGS=["en","ur","ar"],li=0;
+function setLang(l){
+  document.querySelectorAll('[data-i]').forEach(function(e){var k=e.getAttribute('data-i');if(I[l][k])e.textContent=I[l][k];});
+  document.getElementById('issueTxt').placeholder=I[l].issuePh;
+  var lk=document.getElementById('loginKey');if(lk)lk.placeholder=I[l].lPh;
+  document.documentElement.lang=l;document.documentElement.dir=(l==='en'?'ltr':'rtl');
+  document.getElementById('langLbl').textContent=l.toUpperCase();
+  var ll=document.querySelector('.llang');if(ll)ll.textContent=l.toUpperCase();
+  renderOpts(l);
+  if(typeof renderDriver==='function'&&typeof driverName!=='undefined'&&driverName)renderDriver();
+}
+function cycleLang(){li=(li+1)%3;setLang(LANGS[li]);}
+function renderOpts(l){document.getElementById('opts').innerHTML=I[l].opts.map(function(o,i){return '<div class="opt'+(i===0?' sel':'')+'" onclick="this.parentNode.querySelectorAll(\'.opt\').forEach(function(x){x.classList.remove(\'sel\')});this.classList.add(\'sel\')"><span class="rd"></span>'+o+'</div>';}).join('');}
+document.getElementById('langBtn').addEventListener('click',cycleLang);
+document.getElementById('loginLang').addEventListener('click',cycleLang);
+/* ---- login (key entry) + live trips ---- */
+function L(){return I[LANGS[li]];}
+var driverName=null,DTRIPS=[],driverUnsub=null;
+var IC_CHK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M20 6 9 17l-5-5"/></svg>';
+var IC_X='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+var IC_ADV='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+var IC_WARN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>';
+var IC_CALL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7l.5 2.5a2 2 0 0 1-.6 1.9L8 9.1a16 16 0 0 0 6 6l1-1a2 2 0 0 1 1.9-.6l2.5.5a2 2 0 0 1 1.7 2z"/></svg>';
+var MOCKTRIPS=[
+ {uid:'TL-000340',date:'20 Jun',driver:'Akbar',truck:'4M',route:'Riyadh → Kharj',driverRent:350,status:'transit'},
+ {uid:'TL-000339',date:'20 Jun',driver:'Akbar',truck:'6M',route:'Riyadh → Sakaka',driverRent:650,status:'acc'},
+ {uid:'TL-000342',date:'20 Jun',driver:'Akbar',truck:'4M Half',route:'Riyadh → Khamis',driverRent:420,status:'req'}
+];
+var PILL={acc:['p-acc','st_acc'],load:['p-load','st_load'],transit:['p-move','st_move'],reached:['p-reach','st_reach'],done:['p-done','st_done']};
+var NEXTS={acc:'load',load:'transit',transit:'reached',reached:'done'};
+function uidN(u){return parseInt((u||'').replace(/\D/g,''),10)||0;}
+function renderDriver(){
+  if(!driverName)return;var t=L();
+  var reqs=DTRIPS.filter(function(o){return o.status==='req';});
+  document.getElementById('reqZone').innerHTML=reqs.map(function(o){
+    return '<div class="req"><span class="tag"><span class="pls"></span> '+t.newReq+'</span><div class="route">'+o.route+'</div>'+
+      '<div class="meta"><span>🚛 '+o.truck+'</span><span>📅 '+o.date+'</span></div>'+
+      '<div class="rent"><span class="l">'+t.yourRent+'</span><span class="v">SAR '+Number(o.driverRent).toLocaleString()+'</span></div>'+
+      '<div class="two"><button class="big ok" onclick="driverSet(\''+o.uid+'\',\'acc\')">'+IC_CHK+' '+t.accept+'</button>'+
+      '<button class="big no" onclick="driverSet(\''+o.uid+'\',\'rejected\')">'+IC_X+' '+t.reject+'</button></div></div>';
+  }).join('');
+  var act=DTRIPS.filter(function(o){return ['acc','load','transit','reached'].indexOf(o.status)>=0;});
+  var done=DTRIPS.filter(function(o){return o.status==='done';});
+  document.getElementById('cActive').textContent=act.length;document.getElementById('cDone').textContent=done.length;
+  var BTN={acc:t.mark_load,load:t.mark_move,transit:t.mark_reach,reached:t.mark_unload};
+  document.getElementById('p-active').innerHTML=act.map(function(o){
+    var p=PILL[o.status]||PILL.acc;
+    return '<div class="trip'+(o.status==='load'?' glow':'')+'"><div class="top"><span class="uid">'+o.uid+'</span><span class="pill '+p[0]+'">'+t[p[1]]+'</span></div>'+
+      '<div class="rt">'+o.route+'</div><div class="sub"><span>🚛 '+o.truck+'</span><span class="g">SAR '+Number(o.driverRent).toLocaleString()+'</span></div>'+
+      '<button class="statbtn" onclick="driverSet(\''+o.uid+'\',\''+NEXTS[o.status]+'\')">'+IC_ADV+' '+BTN[o.status]+'</button>'+
+      '<div class="trow"><button class="minibtn warn" onclick="openIssue()">'+IC_WARN+' '+t.problem+'</button><button class="minibtn call">'+IC_CALL+' '+t.call+'</button></div></div>';
+  }).join('')||'<div class="empty">'+t.noActive+'</div>';
+  document.getElementById('p-done').innerHTML=done.map(function(o){
+    return '<div class="trip"><div class="top"><span class="uid">'+o.uid+'</span><span class="pill p-done">'+t.st_done+'</span></div>'+
+      '<div class="rt">'+o.route+'</div><div class="sub"><span>🚛 '+o.truck+'</span><span class="g">SAR '+Number(o.driverRent).toLocaleString()+'</span></div>'+
+      '<div class="donerow">'+IC_CHK+' '+t.st_done+'</div></div>';
+  }).join('')||'<div class="empty">'+t.noDone+'</div>';
+}
+function driverSet(uid,status){
+  DTRIPS.forEach(function(o){if(o.uid===uid)o.status=status;});renderDriver();
+  if(window.FB&&FB._ok){var b=FB.db.batch();
+    b.update(FB.db.collection('order_driver').doc(uid),{status:status});
+    b.update(FB.db.collection('orders').doc(uid),{status:status});
+    b.update(FB.db.collection('order_company').doc(uid),{status:status});
+    b.commit().catch(function(e){console.error('driverSet',e);});
+  }
+}
+function startDriver(name){
+  driverName=name;
+  var rs=document.querySelector('.hdr .nm span');if(rs){rs.removeAttribute('data-i');rs.textContent=name;}
+  if(driverUnsub){driverUnsub();driverUnsub=null;}
+  if(window.FB&&FB._ok){
+    driverUnsub=FB.db.collection('order_driver').where('driver','==',name).onSnapshot(function(snap){
+      var arr=[];snap.forEach(function(d){arr.push(d.data());});arr.sort(function(a,b){return uidN(b.uid)-uidN(a.uid);});DTRIPS=arr;renderDriver();
+    },function(e){console.error('driver trips',e);});
+  } else {DTRIPS=MOCKTRIPS.slice();renderDriver();}
+}
+function showBad(){var i=document.getElementById('loginKey');i.classList.add('bad');document.getElementById('loginErr').textContent=L().lBad;setTimeout(function(){i.classList.remove('bad');},400);}
+function finishLogin(code,name){
+  document.getElementById('loginErr').textContent='';
+  try{localStorage.setItem('dispatch_driver_key',code);localStorage.setItem('dispatch_driver_name',name);}catch(e){}
+  document.getElementById('login').classList.add('hide');
+  if(window.FB&&FB.ready){FB.ready.then(function(ok){FB._ok=ok;startDriver(name);});}else{startDriver(name);}
+}
+function doLogin(){
+  var i=document.getElementById('loginKey'),v=(i.value||'').trim().toUpperCase();
+  if(v==='DEMO')v='SAN-DR-Q9PT-3MK7';
+  if(!/^SAN-DR-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(v)){return showBad();}
+  if(window.FB&&FB._ok){
+    document.getElementById('loginErr').textContent='…';
+    FB.db.collection('keys').doc(v).get().then(function(d){
+      if(!d.exists||d.data().role!=='driver'||d.data().status==='rev'){return showBad();}
+      var k=d.data(),already=false;try{already=localStorage.getItem('dispatch_driver_key')===v;}catch(e){}
+      if(!already&&(k.used||0)>=(k.total||1)){document.getElementById('loginErr').textContent=L().lUsed;return;}
+      if(!already){FB.db.collection('keys').doc(v).update({used:(k.used||0)+1}).catch(function(){});}
+      finishLogin(v,k.name);
+    }).catch(function(e){console.error('login',e);showBad();});
+  } else { finishLogin(v,'Akbar'); }
+}
+function useDemo(){document.getElementById('loginKey').value='SAN-DR-Q9PT-3MK7';doLogin();}
+function logout(){if(driverUnsub){driverUnsub();driverUnsub=null;}driverName=null;DTRIPS=[];try{localStorage.removeItem('dispatch_driver_key');localStorage.removeItem('dispatch_driver_name');}catch(e){}document.getElementById('loginKey').value='';document.getElementById('loginErr').textContent='';document.getElementById('login').classList.remove('hide');}
+document.getElementById('loginKey').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
+document.getElementById('loginTheme').addEventListener('click',function(){document.getElementById('themeBtn').click();});
+(function(){var k=null,nm=null;try{k=localStorage.getItem('dispatch_driver_key');nm=localStorage.getItem('dispatch_driver_name');}catch(e){}
+  if(k)document.getElementById('login').classList.add('hide');
+  if(window.FB&&FB.ready){FB.ready.then(function(ok){FB._ok=ok;if(k)startDriver(nm||'Akbar');});}else if(k){startDriver(nm||'Akbar');}
+})();
+/* tabs */
+document.querySelectorAll('.tab').forEach(function(t){t.addEventListener('click',function(){
+  document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on')});this.classList.add('on');
+  document.querySelectorAll('.pane').forEach(function(p){p.classList.remove('on')});
+  document.getElementById('p-'+this.getAttribute('data-tab')).classList.add('on');
+});});
+function openIssue(){document.getElementById('ov').classList.add('show');}
+document.getElementById('ov').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
+(function(){var r=document.documentElement,t='dark';try{t=localStorage.getItem('dispatch_theme')||'dark';}catch(e){}r.setAttribute('data-theme',t);document.getElementById('themeBtn').addEventListener('click',function(){var n=r.getAttribute('data-theme')==='light'?'dark':'light';r.setAttribute('data-theme',n);try{localStorage.setItem('dispatch_theme',n);}catch(e){}});})();
+setLang('en');
+</script>
+</body>
+</html>
