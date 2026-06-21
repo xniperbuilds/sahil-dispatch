@@ -388,21 +388,22 @@ tr:hover td{background:rgba(255,255,255,.015)}
     <!-- DRIVERS VIEW -->
     <div class="view" id="v-drivers">
       <div class="card">
-        <div class="hd"><h3>Drivers</h3><span class="link" id="drvCount"></span></div>
-        <table><thead><tr><th>Driver</th><th>Phone</th><th>Active</th><th>Completed</th><th>App key</th></tr></thead><tbody id="drvRows"></tbody></table>
+        <div class="hd"><h3>Drivers</h3><span id="drvCount" style="margin-left:auto;color:var(--dim);font-size:12.5px"></span><button class="btn" style="margin-left:12px;padding:8px 14px;font-size:12.5px" onclick="openEnt('driver')">+ Add driver</button></div>
+        <table><thead><tr><th>Driver</th><th>Phone</th><th>Active</th><th>Completed</th><th>App key</th><th></th></tr></thead><tbody id="drvRows"></tbody></table>
       </div>
     </div>
 
     <!-- COMPANIES VIEW -->
     <div class="view" id="v-companies">
       <div class="card">
-        <div class="hd"><h3>Companies</h3><span class="link" id="coCount"></span></div>
-        <table><thead><tr><th>Company</th><th>Manager</th><th>Phone</th><th>Quotation</th><th>Outstanding</th><th>App key</th></tr></thead><tbody id="coRows"></tbody></table>
+        <div class="hd"><h3>Companies</h3><span id="coCount" style="margin-left:auto;color:var(--dim);font-size:12.5px"></span><button class="btn" style="margin-left:12px;padding:8px 14px;font-size:12.5px" onclick="openEnt('company')">+ Add company</button></div>
+        <table><thead><tr><th>Company</th><th>Manager</th><th>Phone</th><th>Quotation</th><th>Outstanding</th><th>App key</th><th></th></tr></thead><tbody id="coRows"></tbody></table>
       </div>
     </div>
 
     <!-- TRUCKS VIEW -->
     <div class="view" id="v-trucks">
+      <div class="toolbar"><span id="tkCount" style="color:var(--dim);font-size:12.5px"></span><button class="btn" style="margin-inline-start:auto;padding:8px 14px;font-size:12.5px" onclick="openEnt('truck')">+ Add truck type</button></div>
       <div class="tkgrid" id="tkGrid"></div>
     </div>
 
@@ -511,6 +512,15 @@ tr:hover td{background:rgba(255,255,255,.015)}
       <button class="btn ghost" onclick="document.getElementById('ov').classList.remove('show')">Cancel</button>
       <button class="btn" onclick="createOrder()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg> Create &amp; send to driver</button>
     </div>
+  </div>
+</div>
+
+<!-- ADD ENTITY MODAL -->
+<div class="ov" id="ovEnt">
+  <div class="modal" style="max-width:460px">
+    <div class="mhd"><h2 id="entTitle">Add</h2><button class="x" onclick="closeEnt()">✕</button></div>
+    <div class="mbody" id="entBody"></div>
+    <div class="mfoot"><button class="btn ghost" onclick="closeEnt()">Cancel</button><button class="btn" onclick="saveEnt()">Save</button></div>
   </div>
 </div>
 
@@ -777,36 +787,81 @@ function shareApp(which){var url='https://app.sahilalnojoom.com/'+which;var t='S
 /* Orders filter (ordF + renderOrders defined in the orders block above) */
 document.querySelectorAll('#ordFilters .chipf').forEach(function(c){c.addEventListener('click',function(){document.querySelectorAll('#ordFilters .chipf').forEach(function(x){x.classList.remove('on');});this.classList.add('on');ordF=this.getAttribute('data-f');renderOrders();});});
 
-/* Drivers */
+/* Drivers / Companies / Trucks — live lists with add/delete */
 var PRE=['50','53','54','55','56','58','59'];
 function phone(i,salt){var pre=PRE[((i+salt)>>>0)%PRE.length];var d=1000000+((i*8675309+salt)>>>0)%9000000;var s=String(d);return '+966 '+pre+' '+s.slice(0,3)+' '+s.slice(3);}
-function renderDrivers(){
-  document.getElementById('drvCount').textContent=DRIVERS.length+' drivers';
-  document.getElementById('drvRows').innerHTML=DRIVERS.map(function(n,i){
-    var active=(i%4===0)?0:((i*3)%3)+1,done=12+((i*7)%40),key=hasKey('driver',n);
-    return '<tr><td><div class="tdr">'+ava(n)+'<b>'+n+'</b></div></td><td>'+phone(i,17)+'</td><td>'+(active||'—')+'</td><td>'+done+'</td><td>'+(key?'<span class="ky">● Key active</span>':'<span class="nky">No key</span>')+'</td></tr>';
-  }).join('');
-}
-
-/* Companies */
 var MGR=['Mr. Khan','Mr. Saeed','Mr. Noor','Mr. Tariq','Mr. Ali','Mr. Omar','Mr. Yusuf'];
-function coOut(i){return (i%3===0)?0:(((i*1300)%9000)+500);}
+var COMPANIES_F=[],DRIVERS_F=[],TRUCKS_F=[];
+function initLists(){
+  COMPANIES_F=COMPANIES.map(function(n,i){return {id:'co'+i,name:n,manager:MGR[i%MGR.length],phone:phone(i,91),quotation:'Standard'};});
+  DRIVERS_F=DRIVERS.map(function(n,i){return {id:'dr'+i,name:n,phone:phone(i,17)};});
+  TRUCKS_F=TRUCKS.map(function(n,i){return {id:'tk'+i,name:n};});
+}
+function deriveNames(){COMPANIES=COMPANIES_F.map(function(x){return x.name;});DRIVERS=DRIVERS_F.map(function(x){return x.name;});TRUCKS=TRUCKS_F.map(function(x){return x.name;});}
+function refillSelects(){var co=document.getElementById('f_co'),dr=document.getElementById('f_dr'),tk=document.getElementById('f_tk');if(co)fill('f_co',COMPANIES,co.value);if(dr)fill('f_dr',DRIVERS,dr.value);if(tk)fill('f_tk',TRUCKS,tk.value);if(document.getElementById('kf_co'))fill('kf_co',COMPANIES);if(document.getElementById('kf_dr'))fill('kf_dr',DRIVERS);}
+var IC_DEL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>';
+function delBtn(coll,id,name){return '<button class="kmini" title="Delete" style="width:34px;height:34px" onclick="delEnt(\''+coll+'\',\''+id+'\',\''+esc(name).replace(/\\\\/g,"").replace(/'/g,"")+'\')">'+IC_DEL+'</button>';}
+function renderDrivers(){
+  if(!document.getElementById('drvRows'))return;
+  document.getElementById('drvCount').textContent=DRIVERS_F.length+' drivers';
+  document.getElementById('drvRows').innerHTML=DRIVERS_F.map(function(d){var n=d.name;
+    var active=ORD.filter(function(o){return o.driver===n&&['req','acc','load','transit','reached'].indexOf(o.status)>=0;}).length;
+    var done=ORD.filter(function(o){return o.driver===n&&o.status==='done';}).length;
+    var key=hasKey('driver',n);
+    return '<tr><td><div class="tdr">'+ava(n)+'<b>'+n+'</b></div></td><td>'+(d.phone||'—')+'</td><td>'+(active||'—')+'</td><td>'+done+'</td><td>'+(key?'<span class="ky">● Key active</span>':'<span class="nky">No key</span>')+'</td><td style="text-align:right">'+delBtn('drivers',d.id,n)+'</td></tr>';
+  }).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--dim);padding:24px">No drivers yet — add one.</td></tr>';
+}
 function renderCompanies(){
-  document.getElementById('coCount').textContent=COMPANIES.length+' companies';
-  document.getElementById('coRows').innerHTML=COMPANIES.map(function(n,i){
-    var out=coOut(i),key=hasKey('company',n);
-    return '<tr><td class="co"><div class="tdr">'+ava(n)+n+'</div></td><td>'+MGR[i%MGR.length]+'</td><td>'+phone(i,91)+'</td><td>Standard</td><td>'+(out?'<span class="amtr o">SAR '+out.toLocaleString()+'</span>':'<span class="amtr g">Clear</span>')+'</td><td>'+(key?'<span class="ky">● Key active</span>':'<span class="nky">No key</span>')+'</td></tr>';
-  }).join('');
+  if(!document.getElementById('coRows'))return;
+  document.getElementById('coCount').textContent=COMPANIES_F.length+' companies';
+  document.getElementById('coRows').innerHTML=COMPANIES_F.map(function(c){var n=c.name;
+    var out=ORD.filter(function(o){return o.company===n&&o.status==='done'&&!o.paid;}).reduce(function(s,o){return s+(+o.companyAmount||0);},0);
+    var key=hasKey('company',n);
+    return '<tr><td class="co"><div class="tdr">'+ava(n)+n+'</div></td><td>'+(c.manager||'—')+'</td><td>'+(c.phone||'—')+'</td><td>'+(c.quotation||'Standard')+'</td><td>'+(out?'<span class="amtr o">SAR '+out.toLocaleString()+'</span>':'<span class="amtr g">Clear</span>')+'</td><td>'+(key?'<span class="ky">● Key active</span>':'<span class="nky">No key</span>')+'</td><td style="text-align:right">'+delBtn('companies',c.id,n)+'</td></tr>';
+  }).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--dim);padding:24px">No companies yet — add one.</td></tr>';
 }
-
-/* Trucks */
 function renderTrucks(){
+  if(!document.getElementById('tkGrid'))return;
+  var c=document.getElementById('tkCount');if(c)c.textContent=TRUCKS_F.length+' truck types';
   var TIC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 3h15v13H1zM16 8h4l3 3v5h-7"/></svg>';
-  document.getElementById('tkGrid').innerHTML=TRUCKS.map(function(t,i){
-    var active=(i%3===0)?0:((i*5)%4)+1;
-    return '<div class="tk"><span class="ti">'+TIC+'</span><div><b>'+t+'</b><span>'+(active?active+' on trips now':'Available')+'</span></div></div>';
-  }).join('');
+  document.getElementById('tkGrid').innerHTML=TRUCKS_F.map(function(t){var n=t.name;
+    var active=ORD.filter(function(o){return o.truck===n&&['acc','load','transit','reached'].indexOf(o.status)>=0;}).length;
+    return '<div class="tk"><span class="ti">'+TIC+'</span><div style="flex:1"><b>'+n+'</b><span>'+(active?active+' on trips now':'Available')+'</span></div>'+delBtn('trucks',t.id,n)+'</div>';
+  }).join('')||'<div style="color:var(--dim)">No truck types yet — add one.</div>';
 }
+/* add/delete entity modal */
+var entType=null;
+var ENT={driver:{coll:'drivers',title:'Add driver',fields:[['name','Name'],['phone','Phone (optional)']]},company:{coll:'companies',title:'Add company',fields:[['name','Company name'],['manager','Manager (optional)'],['phone','Phone (optional)'],['quotation','Quotation','quote']]},truck:{coll:'trucks',title:'Add truck type',fields:[['name','Truck type']]}};
+function openEnt(type){entType=type;var e=ENT[type];document.getElementById('entTitle').textContent=e.title;
+  document.getElementById('entBody').innerHTML=e.fields.map(function(f){
+    if(f[2]==='quote')return '<div class="fld full"><label>'+f[1]+'</label><select id="ent_'+f[0]+'">'+QUOTES.map(function(q){return '<option>'+q+'</option>';}).join('')+'</select></div>';
+    return '<div class="fld full"><label>'+f[1]+'</label><input id="ent_'+f[0]+'" type="text" autocomplete="off"></div>';
+  }).join('');
+  document.getElementById('ovEnt').classList.add('show');
+}
+function closeEnt(){document.getElementById('ovEnt').classList.remove('show');}
+function saveEnt(){var e=ENT[entType];var data={},ok=true;
+  e.fields.forEach(function(f){var v=(document.getElementById('ent_'+f[0]).value||'').trim();if(f[0]==='name'&&!v)ok=false;data[f[0]]=v;});
+  if(!ok){saveToast('Name is required');return;}
+  if(FBok()){FB.db.collection(e.coll).add(data).then(function(){saveToast(data.name+' added');}).catch(function(err){console.error(err);saveToast('Failed to add');});}
+  else{var arr=entType==='company'?COMPANIES_F:entType==='driver'?DRIVERS_F:TRUCKS_F;arr.push(Object.assign({id:'x'+Date.now()},data));arr.sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});deriveNames();refillSelects();renderDrivers();renderCompanies();renderTrucks();saveToast(data.name+' added');}
+  closeEnt();
+}
+function delEnt(coll,id,name){if(!confirm('Delete "'+name+'"? This removes it from the lists (existing orders are not affected).'))return;
+  if(FBok()){FB.db.collection(coll).doc(id).delete().then(function(){saveToast(name+' deleted');}).catch(function(e){console.error(e);saveToast('Failed to delete');});}
+  else{var arr=coll==='companies'?COMPANIES_F:coll==='drivers'?DRIVERS_F:TRUCKS_F;var i=-1;arr.forEach(function(x,idx){if(x.id===id)i=idx;});if(i>=0)arr.splice(i,1);deriveNames();refillSelects();renderDrivers();renderCompanies();renderTrucks();saveToast(name+' deleted');}
+}
+function subLists(){
+  ['companies','drivers','trucks'].forEach(function(coll){
+    FB.db.collection(coll).onSnapshot(function(snap){
+      var arr=[];snap.forEach(function(d){arr.push(Object.assign({id:d.id},d.data()));});
+      arr.sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});
+      if(coll==='companies')COMPANIES_F=arr;else if(coll==='drivers')DRIVERS_F=arr;else TRUCKS_F=arr;
+      deriveNames();refillSelects();renderDrivers();renderCompanies();renderTrucks();
+    },function(e){console.error(coll+' snapshot',e);});
+  });
+}
+document.getElementById('ovEnt').addEventListener('click',function(e){if(e.target===this)closeEnt();});
 
 /* Payments (real, from delivered orders) */
 function fmtSAR(n){return 'SAR '+Number(n||0).toLocaleString();}
@@ -890,7 +945,7 @@ function exportData(){
 var SW=['#7c6cff','#3b82f6','#14b8a6','#f59e0b','#ef4444','#ec4899'];
 function renderSwatches(){document.getElementById('swatches').innerHTML=SW.map(function(c,i){return '<span class="sw'+(i===0?' on':'')+'" style="background:'+c+'" onclick="this.parentNode.querySelectorAll(\'.sw\').forEach(function(x){x.classList.remove(\'on\')});this.classList.add(\'on\')"></span>';}).join('');}
 
-renderDash();renderOrders();renderAttention();renderDrivers();renderCompanies();renderTrucks();renderPay();renderReports();renderApps();renderTerms();renderSwatches();
+initLists();renderDash();renderOrders();renderAttention();renderDrivers();renderCompanies();renderTrucks();renderPay();renderReports();renderApps();renderTerms();renderSwatches();
 
 /* ===================== FIREBASE (live backend) ===================== */
 function FBok(){return !!(window.FB&&FB._ok);}
@@ -976,7 +1031,7 @@ function doInstall(){if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.u
 window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferredPrompt=e;if(!inStandalone)showInstall();});
 window.addEventListener('appinstalled',function(){hideInstall();deferredPrompt=null;});
 if(!inStandalone&&isIOS)showInstall();
-if(window.FB&&FB.ready){FB.ready.then(function(ok){FB._ok=ok;if(ok){seedIfEmpty();subKeys();subOrders();subIssues();loadSettings();initPush('admin','Office');}else{console.warn('Firebase not ready — running on local mock data');}});}
+if(window.FB&&FB.ready){FB.ready.then(function(ok){FB._ok=ok;if(ok){seedIfEmpty();subKeys();subOrders();subIssues();subLists();loadSettings();initPush('admin','Office');}else{console.warn('Firebase not ready — running on local mock data');}});}
 </script>
 </body>
 </html>
