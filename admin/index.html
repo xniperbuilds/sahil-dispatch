@@ -763,7 +763,10 @@ updateSeg();renderKeys();
 /* ===================== SUB-PAGES ===================== */
 function ava(n){return '<span class="ava" style="background:'+avaColor(n)+'">'+initials(n)+'</span>';}
 function hasKey(role,name){return KEYS.some(function(k){return k.role===role&&k.name===name&&k.status!=='rev';});}
-function saveToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},1900);}
+function saveToast(msg){var t=document.getElementById('toast');t.style.background='';t.style.color='';t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},1900);}
+var __actx=null;
+function beep(){try{__actx=__actx||new (window.AudioContext||window.webkitAudioContext)();if(__actx.state==='suspended')__actx.resume();var t0=__actx.currentTime;[[880,0],[1175,0.18]].forEach(function(p){var o=__actx.createOscillator(),g=__actx.createGain();o.connect(g);g.connect(__actx.destination);o.type='sine';o.frequency.value=p[0];g.gain.setValueAtTime(0.0001,t0+p[1]);g.gain.exponentialRampToValueAtTime(0.35,t0+p[1]+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t0+p[1]+0.33);o.start(t0+p[1]);o.stop(t0+p[1]+0.35);});}catch(e){}}
+function notify(m){beep();if(navigator.vibrate){try{navigator.vibrate([180,90,180]);}catch(e){}}var t=document.getElementById('toast');t.style.background='var(--acc)';t.style.color='#fff';t.textContent='🔔 '+m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},3800);}
 function shareApp(which){var url='https://app.sahilalnojoom.com/'+which;var t='Sahil Al Nojoom '+(which==='driver'?'Driver':'Company')+' app:\n'+url+'\n\nApp install karein aur apni access key daalein.';window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank');}
 
 /* Orders filter (ordF + renderOrders defined in the orders block above) */
@@ -858,18 +861,21 @@ function seedIfEmpty(){
 function ocView(o){return {uid:o.uid,date:o.date,company:o.company,route:o.route,truck:o.truck,companyAmount:o.companyAmount,status:o.status,flag:!!o.flag,confirmed:!!o.confirmed};}
 function odView(o){return {uid:o.uid,date:o.date,driver:o.driver,route:o.route,truck:o.truck,driverRent:o.driverRent,advance:o.advance||0,status:o.status,flag:!!o.flag};}
 function writeOrder(o){var ts=firebase.firestore.FieldValue.serverTimestamp();var b=FB.db.batch();b.set(FB.db.collection('orders').doc(o.uid),Object.assign({},o,{createdAt:ts}));b.set(FB.db.collection('order_company').doc(o.uid),Object.assign({},ocView(o),{createdAt:ts}));b.set(FB.db.collection('order_driver').doc(o.uid),Object.assign({},odView(o),{createdAt:ts}));b.commit().catch(function(e){console.error('writeOrder',e);});}
+var __ordLoaded=false;
 function subOrders(){
   FB.db.collection('orders').onSnapshot(function(snap){
+    if(__ordLoaded){snap.docChanges().forEach(function(ch){var o=ch.doc.data();if(ch.type==='modified'&&o.status==='rejected')notify('Order '+o.uid+' rejected by driver — reassign');});}
     var arr=[];snap.forEach(function(d){arr.push(d.data());});
-    arr.sort(function(a,b){return uidNum(b.uid)-uidNum(a.uid);});ORD=arr;renderDash();renderOrders();renderAttention();
+    arr.sort(function(a,b){return uidNum(b.uid)-uidNum(a.uid);});ORD=arr;renderDash();renderOrders();renderAttention();__ordLoaded=true;
   },function(e){console.error('orders snapshot',e);});
 }
-var ISSUES=[];
+var ISSUES=[],__issuesLoaded=false;
 function subIssues(){
   FB.db.collection('issues').where('status','==','open').onSnapshot(function(snap){
+    if(__issuesLoaded){snap.docChanges().forEach(function(ch){if(ch.type==='added'){var x=ch.doc.data();notify('New issue · '+(x.orderUid||'')+' ('+(x.role==='company'?'Company':'Driver')+')');}});}
     var a=[];snap.forEach(function(d){var x=d.data();x._id=d.id;a.push(x);});
     a.sort(function(x,y){var tx=(x.createdAt&&x.createdAt.toMillis)?x.createdAt.toMillis():0,ty=(y.createdAt&&y.createdAt.toMillis)?y.createdAt.toMillis():0;return ty-tx;});
-    ISSUES=a;renderAttention();
+    ISSUES=a;renderAttention();__issuesLoaded=true;
   },function(e){console.error('issues snapshot',e);});
 }
 function resolveIssue(id){if(FBok()){FB.db.collection('issues').doc(id).update({status:'resolved'}).catch(function(e){console.error('resolve',e);});}else{ISSUES=ISSUES.filter(function(x){return x._id!==id;});renderAttention();}}
