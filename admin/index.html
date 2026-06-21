@@ -408,31 +408,26 @@ tr:hover td{background:rgba(255,255,255,.015)}
     <!-- PAYMENTS VIEW -->
     <div class="view" id="v-pay">
       <div class="stats" style="margin-bottom:22px">
-        <div class="stat"><div class="ic i-rose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div class="n">SAR 48,300</div><div class="l">Outstanding (companies)</div></div>
-        <div class="stat"><div class="ic i-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg></div><div class="n">SAR 92,150</div><div class="l">Received this month</div></div>
-        <div class="stat"><div class="ic i-amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></div><div class="n">SAR 14,600</div><div class="l">Drivers to pay (rent + advance)</div></div>
-        <div class="stat"><div class="ic i-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 14l4-4 3 3 5-6"/></svg></div><div class="n">SAR 31,900</div><div class="l">Net profit this month</div></div>
+        <div class="stat"><div class="ic i-rose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div class="n" id="pOut">SAR 0</div><div class="l">Outstanding (companies)</div></div>
+        <div class="stat"><div class="ic i-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg></div><div class="n" id="pRecv">SAR 0</div><div class="l">Received (marked paid)</div></div>
+        <div class="stat"><div class="ic i-amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></div><div class="n" id="pDriver">SAR 0</div><div class="l">Drivers to pay (delivered)</div></div>
+        <div class="stat"><div class="ic i-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 14l4-4 3 3 5-6"/></svg></div><div class="n" id="pProfit">SAR 0</div><div class="l">Profit (delivered)</div></div>
       </div>
       <div class="cols2">
-        <div class="card"><div class="hd"><h3>Outstanding by company</h3></div><div id="balList"></div></div>
-        <div class="card"><div class="hd"><h3>Recent receipts</h3></div>
-          <div class="mini"><span class="dot" style="background:var(--green)"></span><div class="t"><b>Samhan · SAR 4,200</b><span>Bank transfer · 20 Jun</span></div></div>
-          <div class="mini"><span class="dot" style="background:var(--green)"></span><div class="t"><b>ACME · SAR 2,750</b><span>Cash · 19 Jun</span></div></div>
-          <div class="mini"><span class="dot" style="background:var(--green)"></span><div class="t"><b>GTEL · SAR 9,000</b><span>Bank transfer · 18 Jun</span></div></div>
-          <div class="mini"><span class="dot" style="background:var(--green)"></span><div class="t"><b>Metro · SAR 1,500</b><span>Cash · 17 Jun</span></div></div>
-        </div>
+        <div class="card"><div class="hd"><h3>Outstanding by company</h3><span class="link" id="pOutNote"></span></div><div id="balList"></div></div>
+        <div class="card"><div class="hd"><h3>Recent receipts</h3></div><div id="payReceipts"></div></div>
       </div>
     </div>
 
     <!-- REPORTS VIEW -->
     <div class="view" id="v-reports">
       <div class="stats" style="margin-bottom:22px">
-        <div class="stat"><div class="ic i-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3 8-8M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div class="n">340</div><div class="l">Orders this month</div></div>
-        <div class="stat"><div class="ic i-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div class="n">SAR 286k</div><div class="l">Revenue this month</div></div>
-        <div class="stat"><div class="ic i-amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 14l4-4 3 3 5-6"/></svg></div><div class="n">SAR 96k</div><div class="l">Profit this month</div></div>
-        <div class="stat"><div class="ic i-rose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zM2 12h20"/></svg></div><div class="n">Riyadh → Dammam</div><div class="l">Top route</div></div>
+        <div class="stat"><div class="ic i-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3 8-8M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div class="n" id="rCount">0</div><div class="l">Total orders</div></div>
+        <div class="stat"><div class="ic i-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div class="n" id="rRev">SAR 0</div><div class="l">Total revenue (company)</div></div>
+        <div class="stat"><div class="ic i-amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 14l4-4 3 3 5-6"/></svg></div><div class="n" id="rProfit">SAR 0</div><div class="l">Total profit</div></div>
+        <div class="stat"><div class="ic i-rose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zM2 12h20"/></svg></div><div class="n" id="rTop" style="font-size:16px">—</div><div class="l">Top route</div></div>
       </div>
-      <div class="card"><div class="hd"><h3>Orders · last 6 months</h3></div><div class="bars" id="repBars"></div></div>
+      <div class="card"><div class="hd"><h3>Orders by status</h3></div><div class="bars" id="repBars"></div></div>
     </div>
 
     <!-- GET APPS VIEW -->
@@ -803,16 +798,44 @@ function renderTrucks(){
   }).join('');
 }
 
-/* Payments */
+/* Payments (real, from delivered orders) */
+function fmtSAR(n){return 'SAR '+Number(n||0).toLocaleString();}
 function renderPay(){
-  var list=COMPANIES.map(function(n,i){return {n:n,o:coOut(i)};}).filter(function(x){return x.o;}).sort(function(a,b){return b.o-a.o;}).slice(0,8);
-  document.getElementById('balList').innerHTML=list.map(function(x){return '<div class="balrow">'+ava(x.n)+'<div class="nm"><b>'+x.n+'</b><span>Outstanding balance</span></div><span class="amtr o">SAR '+x.o.toLocaleString()+'</span></div>';}).join('');
+  if(!document.getElementById('balList'))return;
+  var done=ORD.filter(function(o){return o.status==='done';});
+  var outByCo={},outTotal=0,recv=0,driverPay=0,profit=0;
+  done.forEach(function(o){var ca=+o.companyAmount||0,dr=+o.driverRent||0;profit+=(ca-dr);if(o.paid){recv+=ca;}else{outTotal+=ca;driverPay+=dr;outByCo[o.company]=(outByCo[o.company]||0)+ca;}});
+  document.getElementById('pOut').textContent=fmtSAR(outTotal);
+  document.getElementById('pRecv').textContent=fmtSAR(recv);
+  document.getElementById('pDriver').textContent=fmtSAR(driverPay);
+  document.getElementById('pProfit').textContent=fmtSAR(profit);
+  var list=Object.keys(outByCo).map(function(n){return {n:n,o:outByCo[n]};}).sort(function(a,b){return b.o-a.o;});
+  document.getElementById('pOutNote').textContent=list.length?(list.length+' compan'+(list.length>1?'ies':'y')):'';
+  document.getElementById('balList').innerHTML=list.length?list.map(function(x){return '<div class="balrow">'+ava(x.n)+'<div class="nm"><b>'+x.n+'</b><span>Delivered · pending settlement</span></div><span class="amtr o">'+fmtSAR(x.o)+'</span><button class="kbtn" style="flex:0 0 auto;margin-inline-start:10px;padding:8px 12px" onclick="markPaid(this.getAttribute(\'data-co\'))" data-co="'+esc(x.n)+'">Mark paid</button></div>';}).join(''):'<div class="balrow"><div class="nm"><span style="color:var(--dim)">No outstanding — all delivered orders settled.</span></div></div>';
+  var paid=done.filter(function(o){return o.paid;});
+  document.getElementById('payReceipts').innerHTML=paid.length?paid.slice(0,10).map(function(o){return '<div class="mini"><span class="dot" style="background:var(--green)"></span><div class="t"><b>'+o.company+' · '+fmtSAR(o.companyAmount)+'</b><span>'+o.uid+' · '+o.route+'</span></div></div>';}).join(''):'<div class="mini"><div class="t"><span style="color:var(--dim)">No receipts yet — mark delivered orders as paid.</span></div></div>';
+}
+function markPaid(company){
+  var ids=ORD.filter(function(o){return o.status==='done'&&!o.paid&&o.company===company;}).map(function(o){return o.uid;});
+  if(!ids.length)return;
+  if(FBok()){var b=FB.db.batch();ids.forEach(function(uid){b.update(FB.db.collection('orders').doc(uid),{paid:true});b.update(FB.db.collection('order_company').doc(uid),{paid:true});});b.commit().then(function(){saveToast(company+' · marked paid');}).catch(function(e){console.error('markPaid',e);});}
+  else{ORD.forEach(function(o){if(ids.indexOf(o.uid)>=0)o.paid=true;});renderPay();saveToast(company+' · marked paid');}
 }
 
-/* Reports */
+/* Reports (real, from orders) */
 function renderReports(){
-  var data=[['Jan',180],['Feb',210],['Mar',240],['Apr',300],['May',280],['Jun',340]],max=340;
-  document.getElementById('repBars').innerHTML=data.map(function(d){return '<div class="bar"><div class="bb" style="height:'+Math.round(d[1]/max*100)+'%"></div><small>'+d[0]+'</small></div>';}).join('');
+  if(!document.getElementById('rCount'))return;
+  var rev=0,profit=0,routes={};
+  ORD.forEach(function(o){var ca=+o.companyAmount||0,dr=+o.driverRent||0;rev+=ca;profit+=(ca-dr);if(o.route)routes[o.route]=(routes[o.route]||0)+1;});
+  document.getElementById('rCount').textContent=ORD.length;
+  document.getElementById('rRev').textContent=fmtSAR(rev);
+  document.getElementById('rProfit').textContent=fmtSAR(profit);
+  var top='—',mx=0;Object.keys(routes).forEach(function(r){if(routes[r]>mx){mx=routes[r];top=r;}});
+  document.getElementById('rTop').textContent=top;
+  var order=['req','acc','load','transit','reached','done'],labels={req:'Req',acc:'Acc',load:'Load',transit:'Moving',reached:'Reached',done:'Done'},cnt={};
+  order.forEach(function(s){cnt[s]=0;});ORD.forEach(function(o){if(cnt[o.status]!=null)cnt[o.status]++;});
+  var max=Math.max(1,Math.max.apply(null,order.map(function(s){return cnt[s];})));
+  document.getElementById('repBars').innerHTML=order.map(function(s){return '<div class="bar"><div class="bb" style="height:'+Math.round(cnt[s]/max*100)+'%"></div><small>'+labels[s]+' '+cnt[s]+'</small></div>';}).join('');
 }
 
 /* Get Apps — pseudo QR */
@@ -871,7 +894,7 @@ function subOrders(){
   FB.db.collection('orders').onSnapshot(function(snap){
     if(__ordLoaded){snap.docChanges().forEach(function(ch){var o=ch.doc.data();if(ch.type==='modified'&&o.status==='rejected')notify('Order '+o.uid+' rejected by driver — reassign');});}
     var arr=[];snap.forEach(function(d){arr.push(d.data());});
-    arr.sort(function(a,b){return uidNum(b.uid)-uidNum(a.uid);});ORD=arr;renderDash();renderOrders();renderAttention();__ordLoaded=true;
+    arr.sort(function(a,b){return uidNum(b.uid)-uidNum(a.uid);});ORD=arr;renderDash();renderOrders();renderAttention();renderPay();renderReports();__ordLoaded=true;
   },function(e){console.error('orders snapshot',e);});
 }
 var ISSUES=[],__issuesLoaded=false;
