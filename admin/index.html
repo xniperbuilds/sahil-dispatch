@@ -475,6 +475,10 @@ tr:hover td{background:rgba(255,255,255,.015)}
         <div class="fld"><label>Default theme</label><select><option>Dark</option><option>Light</option></select></div>
         <div class="savebar"><button class="btn" onclick="saveToast('Settings saved · apps updated')">Save changes</button></div>
       </div>
+      <div class="formcard" style="margin-top:16px;grid-template-columns:1fr">
+        <div><h3 style="font:700 15px/1 var(--disp);margin-bottom:6px">Backup &amp; data</h3><p style="font:500 12.5px/1.5 var(--body);color:var(--mut)">Download a full backup of all orders, keys, companies, drivers &amp; settings as a JSON file. Keep it safe — good before any big change.</p></div>
+        <div class="savebar" style="justify-content:flex-start"><button class="btn ghost" onclick="exportData()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M8 11l4 4 4-4M4 21h16"/></svg> Download backup</button></div>
+      </div>
     </div>
 
     <!-- PLACEHOLDER VIEW -->
@@ -866,6 +870,16 @@ function saveTerms(){
 function loadSettings(){FB.db.collection('settings').doc('global').get().then(function(d){if(d.exists){var x=d.data();if(x.terms)TERMS.terms=x.terms;if(x.privacy)TERMS.privacy=x.privacy;if(document.getElementById('v-terms').classList.contains('on'))renderTerms();}}).catch(function(){});}
 document.querySelectorAll('#termSeg button').forEach(function(b){b.addEventListener('click',function(){TERMS[termTab]=document.getElementById('termsEd').value;document.querySelectorAll('#termSeg button').forEach(function(x){x.classList.remove('on');});this.classList.add('on');termTab=this.getAttribute('data-tm');renderTerms();});});
 
+/* Settings — backup/export */
+function exportData(){
+  if(!FBok()){saveToast('Connect to cloud first');return;}
+  var cols=['orders','order_company','order_driver','keys','companies','drivers','trucks','issues','settings'];
+  Promise.all(cols.map(function(c){return FB.db.collection(c).get().then(function(s){var a=[];s.forEach(function(d){a.push(Object.assign({_id:d.id},d.data()));});return [c,a];}).catch(function(){return [c,[]];});})).then(function(res){
+    var data={app:'Sahil Al Nojoom Dispatch',exportedAt:new Date().toISOString(),collections:{}};
+    res.forEach(function(r){data.collections[r[0]]=r[1];});
+    try{var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='sahil-dispatch-backup-'+(new Date().toISOString().slice(0,10))+'.json';document.body.appendChild(a);a.click();a.remove();saveToast('Backup downloaded');}catch(e){console.error('export',e);saveToast('Export failed');}
+  }).catch(function(e){console.error('export',e);saveToast('Export failed');});
+}
 /* Settings — swatches */
 var SW=['#7c6cff','#3b82f6','#14b8a6','#f59e0b','#ef4444','#ec4899'];
 function renderSwatches(){document.getElementById('swatches').innerHTML=SW.map(function(c,i){return '<span class="sw'+(i===0?' on':'')+'" style="background:'+c+'" onclick="this.parentNode.querySelectorAll(\'.sw\').forEach(function(x){x.classList.remove(\'on\')});this.classList.add(\'on\')"></span>';}).join('');}

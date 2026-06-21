@@ -281,7 +281,10 @@ function startDriver(name){
   var driverLoaded=false;
   if(window.FB&&FB._ok){
     driverUnsub=FB.db.collection('order_driver').where('driver','==',name).onSnapshot(function(snap){
-      if(driverLoaded){snap.docChanges().forEach(function(ch){if(ch.type==='added'){var o=ch.doc.data();if(o.status==='req')notify((L().newReq||'New trip request')+': '+o.route);}});}
+      if(driverLoaded){snap.docChanges().forEach(function(ch){var o=ch.doc.data();
+        if(ch.type==='added'){notify((o.status==='req'?(L().newReq||'New trip request'):'Trip assigned to you')+': '+o.route);}
+        else if(ch.type==='removed'){notify('A trip was reassigned: '+o.route);}
+      });}
       var arr=[];snap.forEach(function(d){arr.push(d.data());});arr.sort(function(a,b){return uidN(b.uid)-uidN(a.uid);});DTRIPS=arr;renderDriver();driverLoaded=true;
     },function(e){console.error('driver trips',e);});
   } else {DTRIPS=MOCKTRIPS.slice();renderDriver();}
