@@ -172,6 +172,8 @@ body{background:var(--bg);color:var(--txt);font-family:var(--body);display:flex;
   </div>
 </div>
 
+<div id="dtoast" style="position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--green);color:#04130d;font:700 13.5px/1 var(--body);padding:13px 20px;border-radius:12px;box-shadow:0 12px 30px -8px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:.25s;z-index:90"></div>
+
 <!-- ISSUE SHEET -->
 <div class="ov" id="ov">
   <div class="sheet">
@@ -180,7 +182,7 @@ body{background:var(--bg);color:var(--txt);font-family:var(--body);display:flex;
     <div class="opts" id="opts"></div>
     <textarea id="issueTxt" placeholder="Describe the issue… (required)"></textarea>
     <div class="req-note" data-i="mandatory">⚠️ Writing the details is required.</div>
-    <button class="send" onclick="document.getElementById('ov').classList.remove('show')" data-i="sendIssue">Send to office</button>
+    <button class="send" onclick="sendIssue()" data-i="sendIssue">Send to office</button>
   </div>
 </div>
 
@@ -240,7 +242,7 @@ function renderDriver(){
     return '<div class="trip'+(o.status==='load'?' glow':'')+'"><div class="top"><span class="uid">'+o.uid+'</span><span class="pill '+p[0]+'">'+t[p[1]]+'</span></div>'+
       '<div class="rt">'+o.route+'</div><div class="sub"><span>🚛 '+o.truck+'</span><span class="g">SAR '+Number(o.driverRent).toLocaleString()+'</span></div>'+
       '<button class="statbtn" onclick="driverSet(\''+o.uid+'\',\''+NEXTS[o.status]+'\')">'+IC_ADV+' '+BTN[o.status]+'</button>'+
-      '<div class="trow"><button class="minibtn warn" onclick="openIssue()">'+IC_WARN+' '+t.problem+'</button><button class="minibtn call">'+IC_CALL+' '+t.call+'</button></div></div>';
+      '<div class="trow"><button class="minibtn warn" onclick="openIssue(\''+o.uid+'\')">'+IC_WARN+' '+t.problem+'</button><button class="minibtn call">'+IC_CALL+' '+t.call+'</button></div></div>';
   }).join('')||'<div class="empty">'+t.noActive+'</div>';
   document.getElementById('p-done').innerHTML=done.map(function(o){
     return '<div class="trip"><div class="top"><span class="uid">'+o.uid+'</span><span class="pill p-done">'+t.st_done+'</span></div>'+
@@ -303,7 +305,18 @@ document.querySelectorAll('.tab').forEach(function(t){t.addEventListener('click'
   document.querySelectorAll('.pane').forEach(function(p){p.classList.remove('on')});
   document.getElementById('p-'+this.getAttribute('data-tab')).classList.add('on');
 });});
-function openIssue(){document.getElementById('ov').classList.add('show');}
+var issueUid=null;
+var SENT={en:'Sent to office ✓',ur:'دفتر بھیج دیا ✓',ar:'تم الإرسال ✓'};
+function openIssue(uid){issueUid=uid||null;var ta=document.getElementById('issueTxt');if(ta){ta.value='';ta.style.borderColor='';}document.getElementById('ov').classList.add('show');}
+function dtoast(m){var t=document.getElementById('dtoast');t.textContent=m;t.style.opacity='1';t.style.transform='translateX(-50%) translateY(0)';clearTimeout(t._t);t._t=setTimeout(function(){t.style.opacity='0';t.style.transform='translateX(-50%) translateY(20px)';},1900);}
+function sendIssue(){
+  var ta=document.getElementById('issueTxt'),txt=ta.value.trim();
+  if(!txt){ta.style.borderColor='var(--rose)';setTimeout(function(){ta.style.borderColor='';},900);return;}
+  var sel=document.querySelector('#opts .opt.sel'),type=sel?sel.textContent.trim():'';
+  if(window.FB&&FB._ok){FB.db.collection('issues').add({orderUid:issueUid||'',role:'driver',by:driverName||'',type:type,text:txt,status:'open',createdAt:firebase.firestore.FieldValue.serverTimestamp()}).catch(function(e){console.error('issue',e);});}
+  document.getElementById('ov').classList.remove('show');ta.value='';
+  dtoast(SENT[LANGS[li]]||SENT.en);
+}
 document.getElementById('ov').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
 (function(){var r=document.documentElement,t='dark';try{t=localStorage.getItem('dispatch_theme')||'dark';}catch(e){}r.setAttribute('data-theme',t);document.getElementById('themeBtn').addEventListener('click',function(){var n=r.getAttribute('data-theme')==='light'?'dark':'light';r.setAttribute('data-theme',n);try{localStorage.setItem('dispatch_theme',n);}catch(e){}});})();
 setLang('en');

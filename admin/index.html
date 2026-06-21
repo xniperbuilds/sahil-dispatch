@@ -301,7 +301,7 @@ tr:hover td{background:rgba(255,255,255,.015)}
       <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
       <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
     </button>
-    <button class="btn" onclick="document.getElementById('ov').classList.add('show')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg> New Order</button>
+    <button class="btn" onclick="newOrder()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg> New Order</button>
   </div>
 
   <div class="wrap">
@@ -322,12 +322,8 @@ tr:hover td{background:rgba(255,255,255,.015)}
         </table>
       </div>
       <div class="card">
-        <div class="hd"><h3>Needs attention</h3></div>
-        <div class="mini"><span class="dot" style="background:var(--rose)"></span><div class="t"><b>TL-000341 flagged</b><span>Driver pressed "extra charges" — Riyadh → Dammam</span></div><span class="go">Review</span></div>
-        <div class="mini"><span class="dot" style="background:var(--amber)"></span><div class="t"><b>TL-000338 awaiting confirm</b><span>SwedTel hasn't confirmed (4h)</span></div><span class="go">Remind</span></div>
-        <div class="mini"><span class="dot" style="background:var(--amber)"></span><div class="t"><b>TL-000336 awaiting confirm</b><span>ACME hasn't confirmed (2h)</span></div><span class="go">Remind</span></div>
-        <div class="mini"><span class="dot" style="background:var(--blue)"></span><div class="t"><b>Issue reported · TL-000330</b><span>Company: "wrong destination"</span></div><span class="go">Open</span></div>
-        <div class="mini"><span class="dot" style="background:var(--orange)"></span><div class="t"><b>Driver swap needed · TL-000333</b><span>Truck breakdown after loading</span></div><span class="go">Reassign</span></div>
+        <div class="hd"><h3>Needs attention</h3><span class="link" id="attnCount"></span></div>
+        <div id="attnList"></div>
       </div>
     </div>
     </div><!-- /v-dash -->
@@ -595,10 +591,11 @@ var ORD=MOCKORD.slice();
 function stPill(s){var x=ST[s]||ST.req;return '<span class="pill '+x.c+'">'+x.l+'</span>';}
 function uidNum(u){return parseInt((u||'').replace(/\D/g,''),10)||0;}
 function nextUID(){var max=0;ORD.forEach(function(o){if(uidNum(o.uid)>max)max=uidNum(o.uid);});return 'TL-'+String(max+1).padStart(6,'0');}
+function fmtDate(d){if(/^\d{4}-\d{2}-\d{2}$/.test(d||'')){return (+d.slice(8))+' '+MON[(+d.slice(5,7)||1)-1];}return d||'';}
 function renderDash(){
   document.getElementById('rows').innerHTML=ORD.slice(0,6).map(function(o){
     var flag=o.status==='flag'?' <span class="flagico">🚩</span>':'';
-    return '<tr><td class="uid">'+o.uid+'</td><td class="co">'+o.company+flag+'</td><td>'+o.route+'</td><td>'+o.truck+'</td><td class="amt">SAR '+Number(o.companyAmount).toLocaleString()+'</td><td>'+stPill(o.status)+'</td></tr>';
+    return '<tr style="cursor:pointer" onclick="openOrder(\''+o.uid+'\')"><td class="uid">'+o.uid+'</td><td class="co">'+o.company+flag+'</td><td>'+o.route+'</td><td>'+o.truck+'</td><td class="amt">SAR '+Number(o.companyAmount).toLocaleString()+'</td><td>'+stPill(o.status)+'</td></tr>';
   }).join('');
 }
 var ordF='all';
@@ -607,23 +604,48 @@ function renderOrders(){
   document.getElementById('ordCount').textContent=rows.length+' orders';
   document.getElementById('ordRows').innerHTML=rows.map(function(o){
     var flag=o.status==='flag'?' <span class="flagico">🚩</span>':'';
-    return '<tr><td class="uid">'+o.uid+'</td><td>'+o.date+'</td><td class="co">'+o.company+flag+'</td><td><div class="tdr">'+ava(o.driver)+o.driver+'</div></td><td>'+o.truck+'</td><td>'+o.route+'</td><td class="amt">SAR '+Number(o.companyAmount).toLocaleString()+'</td><td>'+stPill(o.status)+'</td></tr>';
+    return '<tr style="cursor:pointer" onclick="openOrder(\''+o.uid+'\')"><td class="uid">'+o.uid+'</td><td>'+fmtDate(o.date)+'</td><td class="co">'+o.company+flag+'</td><td><div class="tdr">'+ava(o.driver)+o.driver+'</div></td><td>'+o.truck+'</td><td>'+o.route+'</td><td class="amt">SAR '+Number(o.companyAmount).toLocaleString()+'</td><td>'+stPill(o.status)+'</td></tr>';
   }).join('');
 }
 var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var editingUid=null;
+function newOrder(){
+  editingUid=null;
+  document.querySelector('#ov .mhd h2').textContent='New Order';
+  document.getElementById('f_route').value='';document.getElementById('f_notes').value='';document.getElementById('f_flag').checked=false;
+  document.getElementById('f_corent').value=600;document.getElementById('f_drrent').value=400;document.getElementById('f_extra').value=0;document.getElementById('f_adv').value=0;
+  document.getElementById('f_date').value='2026-06-21';
+  calc();document.getElementById('ov').classList.add('show');
+}
+function openOrder(uid){
+  var o=null;ORD.forEach(function(x){if(x.uid===uid)o=x;});if(!o)return;
+  editingUid=uid;
+  document.getElementById('f_co').value=o.company;document.getElementById('f_dr').value=o.driver;document.getElementById('f_tk').value=o.truck;
+  document.getElementById('f_route').value=o.route||'';
+  document.getElementById('f_corent').value=o.companyAmount||0;document.getElementById('f_drrent').value=o.driverRent||0;
+  document.getElementById('f_extra').value=o.extraKm||0;document.getElementById('f_adv').value=o.advance||0;
+  document.getElementById('f_notes').value=o.notes||'';document.getElementById('f_flag').checked=!!o.flag;
+  document.getElementById('f_date').value=/^\d{4}-\d{2}-\d{2}$/.test(o.date||'')?o.date:'';
+  calc();
+  document.querySelector('#ov .mhd h2').textContent='Edit Order · '+uid;
+  document.getElementById('ov').classList.add('show');
+}
 function createOrder(){
   var company=document.getElementById('f_co').value,driver=document.getElementById('f_dr').value,truck=document.getElementById('f_tk').value;
   var route=document.getElementById('f_route').value.trim()||'—';
   var ca=+document.getElementById('f_corent').value||0,dr=+document.getElementById('f_drrent').value||0,ex=+document.getElementById('f_extra').value||0,adv=+document.getElementById('f_adv').value||0;
   var notes=document.getElementById('f_notes').value.trim(),flag=document.getElementById('f_flag').checked;
-  var dv=document.getElementById('f_date').value,date=dv?(dv.slice(8)+' '+MON[(+dv.slice(5,7)||1)-1]):'Today';
-  var uid=nextUID();
-  var o={uid:uid,date:date,company:company,driver:driver,truck:truck,route:route,companyAmount:ca,driverRent:dr,extraKm:ex,advance:adv,notes:notes,flag:flag,status:flag?'flag':'req',confirmed:false};
+  var uid=editingUid||nextUID();
+  var ex0=null;ORD.forEach(function(x){if(x.uid===uid)ex0=x;});
+  var date=document.getElementById('f_date').value||(ex0?ex0.date:'');
+  var status=ex0?ex0.status:(flag?'flag':'req');
+  var confirmed=ex0?!!ex0.confirmed:false;
+  var o={uid:uid,date:date,company:company,driver:driver,truck:truck,route:route,companyAmount:ca,driverRent:dr,extraKm:ex,advance:adv,notes:notes,flag:flag,status:status,confirmed:confirmed};
   if(FBok()){writeOrder(o);}
-  else{ORD.unshift(o);renderDash();renderOrders();}
+  else{var idx=-1;ORD.forEach(function(x,i){if(x.uid===uid)idx=i;});if(idx>=0)ORD[idx]=o;else ORD.unshift(o);renderDash();renderOrders();renderAttention();}
   document.getElementById('ov').classList.remove('show');
-  document.getElementById('f_route').value='';document.getElementById('f_notes').value='';document.getElementById('f_flag').checked=false;
-  saveToast('Order '+uid+' created & sent to driver');
+  var wasEdit=!!editingUid;editingUid=null;
+  saveToast(wasEdit?('Order '+uid+' updated · synced to both apps'):('Order '+uid+' created & sent to driver'));
 }
 
 /* ---- sidebar navigation (switch views) ---- */
@@ -657,7 +679,7 @@ function createOrder(){
 /* ===================== ACCESS KEYS ===================== */
 var QUOTES=["Sahil Al Nojoom — Standard Rate Sheet"];
 var KEYS=[
-  {role:'company',name:'ACME',key:'SAN-CO-7K2M-9XQP',quote:QUOTES[0],total:3,used:2,status:'live'},
+  {role:'company',name:'ACME',key:'SAN-CO-7K2M-9XQP',quote:QUOTES[0],total:5,used:0,status:'live'},
   {role:'company',name:'SwedTel',key:'SAN-CO-4D8N-2WL5',quote:QUOTES[0],total:1,used:1,status:'used'},
   {role:'company',name:'Metro',key:'SAN-CO-J3VH-6RB8',quote:QUOTES[0],total:5,used:0,status:'live'},
   {role:'driver',name:'Akbar',key:'SAN-DR-Q9PT-3MK7',quote:null,total:5,used:0,status:'live'},
@@ -817,7 +839,7 @@ document.querySelectorAll('#termSeg button').forEach(function(b){b.addEventListe
 var SW=['#7c6cff','#3b82f6','#14b8a6','#f59e0b','#ef4444','#ec4899'];
 function renderSwatches(){document.getElementById('swatches').innerHTML=SW.map(function(c,i){return '<span class="sw'+(i===0?' on':'')+'" style="background:'+c+'" onclick="this.parentNode.querySelectorAll(\'.sw\').forEach(function(x){x.classList.remove(\'on\')});this.classList.add(\'on\')"></span>';}).join('');}
 
-renderDash();renderOrders();renderDrivers();renderCompanies();renderTrucks();renderPay();renderReports();renderApps();renderTerms();renderSwatches();
+renderDash();renderOrders();renderAttention();renderDrivers();renderCompanies();renderTrucks();renderPay();renderReports();renderApps();renderTerms();renderSwatches();
 
 /* ===================== FIREBASE (live backend) ===================== */
 function FBok(){return !!(window.FB&&FB._ok);}
@@ -839,8 +861,32 @@ function writeOrder(o){var ts=firebase.firestore.FieldValue.serverTimestamp();va
 function subOrders(){
   FB.db.collection('orders').onSnapshot(function(snap){
     var arr=[];snap.forEach(function(d){arr.push(d.data());});
-    arr.sort(function(a,b){return uidNum(b.uid)-uidNum(a.uid);});ORD=arr;renderDash();renderOrders();
+    arr.sort(function(a,b){return uidNum(b.uid)-uidNum(a.uid);});ORD=arr;renderDash();renderOrders();renderAttention();
   },function(e){console.error('orders snapshot',e);});
+}
+var ISSUES=[];
+function subIssues(){
+  FB.db.collection('issues').where('status','==','open').onSnapshot(function(snap){
+    var a=[];snap.forEach(function(d){var x=d.data();x._id=d.id;a.push(x);});
+    a.sort(function(x,y){var tx=(x.createdAt&&x.createdAt.toMillis)?x.createdAt.toMillis():0,ty=(y.createdAt&&y.createdAt.toMillis)?y.createdAt.toMillis():0;return ty-tx;});
+    ISSUES=a;renderAttention();
+  },function(e){console.error('issues snapshot',e);});
+}
+function resolveIssue(id){if(FBok()){FB.db.collection('issues').doc(id).update({status:'resolved'}).catch(function(e){console.error('resolve',e);});}else{ISSUES=ISSUES.filter(function(x){return x._id!==id;});renderAttention();}}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function renderAttention(){
+  var el=document.getElementById('attnList');if(!el)return;var h='',n=0;
+  (ISSUES||[]).forEach(function(it){n++;
+    h+='<div class="mini"><span class="dot" style="background:var(--blue)"></span><div class="t"><b>Issue · '+esc(it.orderUid||'—')+'</b><span>'+(it.role==='company'?'Company':'Driver')+(it.by?' ('+esc(it.by)+')':'')+': '+esc(it.type?it.type+' — ':'')+esc(it.text||'')+'</span></div><span class="go" onclick="openOrder(\''+esc(it.orderUid)+'\')">Open</span> &nbsp;<span class="go" style="color:var(--green)" onclick="resolveIssue(\''+it._id+'\')">Resolve</span></div>';
+  });
+  ORD.filter(function(o){return o.status==='flag';}).forEach(function(o){n++;
+    h+='<div class="mini"><span class="dot" style="background:var(--rose)"></span><div class="t"><b>'+o.uid+' flagged</b><span>'+esc(o.company)+' · '+esc(o.route)+'</span></div><span class="go" onclick="openOrder(\''+o.uid+'\')">Open</span></div>';
+  });
+  ORD.filter(function(o){return o.confirmed===false&&o.status!=='done'&&o.status!=='rejected';}).slice(0,6).forEach(function(o){n++;
+    h+='<div class="mini"><span class="dot" style="background:var(--amber)"></span><div class="t"><b>'+o.uid+' awaiting confirm</b><span>'+esc(o.company)+" hasn't confirmed yet</span></div><span class=\"go\" onclick=\"openOrder('"+o.uid+"')\">Open</span></div>";
+  });
+  el.innerHTML=h||'<div class="mini"><div class="t"><span style="color:var(--dim)">All clear — nothing needs attention.</span></div></div>';
+  var c=document.getElementById('attnCount');if(c)c.textContent=n?n+' item'+(n>1?'s':''):'';
 }
 function subKeys(){
   FB.db.collection('keys').onSnapshot(function(snap){
@@ -848,7 +894,7 @@ function subKeys(){
     arr.sort(function(a,b){return b._t-a._t;});KEYS=arr;updateSeg();renderKeys();renderDrivers();renderCompanies();
   },function(e){console.error('keys snapshot',e);});
 }
-if(window.FB&&FB.ready){FB.ready.then(function(ok){FB._ok=ok;if(ok){seedIfEmpty();subKeys();subOrders();}else{console.warn('Firebase not ready — running on local mock data');}});}
+if(window.FB&&FB.ready){FB.ready.then(function(ok){FB._ok=ok;if(ok){seedIfEmpty();subKeys();subOrders();subIssues();}else{console.warn('Firebase not ready — running on local mock data');}});}
 </script>
 </body>
 </html>
