@@ -188,6 +188,7 @@ body{background:var(--bg);color:var(--txt);font-family:var(--body);display:flex;
   </div>
 </div>
 
+<button id="installBtn" onclick="doInstall()" style="display:none;position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:95;border:0;cursor:pointer;font:800 14px/1 'Plus Jakarta Sans',sans-serif;padding:13px 20px;border-radius:30px;background:linear-gradient(135deg,#7c6cff,#9d7bff);color:#fff;box-shadow:0 12px 30px -8px rgba(124,108,255,.7);align-items:center;gap:8px">📲 Install app</button>
 <div id="dtoast" style="position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--green);color:#04130d;font:700 13.5px/1 var(--body);padding:13px 20px;border-radius:12px;box-shadow:0 12px 30px -8px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:.25s;z-index:90"></div>
 
 <!-- ISSUE SHEET -->
@@ -371,6 +372,14 @@ function initPush(role,holder){
 }
 function tokensFor(role,holder){var q=holder?FB.db.collection('tokens').where('holder','==',holder):FB.db.collection('tokens').where('role','==',role);return q.get().then(function(s){var t=[];s.forEach(function(d){var x=d.data();if(!role||x.role===role)t.push(d.id);});return t;}).catch(function(){return [];});}
 function pushTo(role,holder,title,body){if(!window.FB||!FB._ok||!WORKER_URL)return;tokensFor(role,holder).then(function(toks){if(toks.length)fetch(WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tokens:toks,title:title,body:body})}).catch(function(){});});}
+/* install app (PWA) */
+var deferredPrompt=null,isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent||''),inStandalone=(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
+function showInstall(){var b=document.getElementById('installBtn');if(b)b.style.display='inline-flex';}
+function hideInstall(){var b=document.getElementById('installBtn');if(b)b.style.display='none';}
+function doInstall(){if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(function(){deferredPrompt=null;hideInstall();});return;}alert(isIOS?'Install: neeche Safari ka Share button (box with ↑) dabao, phir "Add to Home Screen".':'Install: browser menu (⋮) kholo, "Install app" / "Add to Home screen" dabao.');}
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferredPrompt=e;if(!inStandalone)showInstall();});
+window.addEventListener('appinstalled',function(){hideInstall();deferredPrompt=null;});
+if(!inStandalone&&isIOS)showInstall();
 (function(){var r=document.documentElement,t='dark';try{t=localStorage.getItem('dispatch_theme')||'dark';}catch(e){}r.setAttribute('data-theme',t);document.getElementById('themeBtn').addEventListener('click',function(){var n=r.getAttribute('data-theme')==='light'?'dark':'light';r.setAttribute('data-theme',n);try{localStorage.setItem('dispatch_theme',n);}catch(e){}});})();
 setLang('en');
 </script>
