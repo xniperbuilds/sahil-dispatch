@@ -835,7 +835,12 @@ var TERMS={
 };
 var termTab='terms';
 function renderTerms(){document.getElementById('termsEd').value=TERMS[termTab];}
-function saveTerms(){TERMS[termTab]=document.getElementById('termsEd').value;saveToast('Terms saved · both apps updated');}
+function saveTerms(){
+  TERMS[termTab]=document.getElementById('termsEd').value;
+  if(FBok()){FB.db.collection('settings').doc('global').set({terms:TERMS.terms,privacy:TERMS.privacy},{merge:true}).then(function(){saveToast('Terms saved · live in both apps');}).catch(function(e){console.error('saveTerms',e);saveToast('Saved locally (offline)');});}
+  else{saveToast('Terms saved locally');}
+}
+function loadSettings(){FB.db.collection('settings').doc('global').get().then(function(d){if(d.exists){var x=d.data();if(x.terms)TERMS.terms=x.terms;if(x.privacy)TERMS.privacy=x.privacy;if(document.getElementById('v-terms').classList.contains('on'))renderTerms();}}).catch(function(){});}
 document.querySelectorAll('#termSeg button').forEach(function(b){b.addEventListener('click',function(){TERMS[termTab]=document.getElementById('termsEd').value;document.querySelectorAll('#termSeg button').forEach(function(x){x.classList.remove('on');});this.classList.add('on');termTab=this.getAttribute('data-tm');renderTerms();});});
 
 /* Settings — swatches */
@@ -900,7 +905,7 @@ function subKeys(){
     arr.sort(function(a,b){return b._t-a._t;});KEYS=arr;updateSeg();renderKeys();renderDrivers();renderCompanies();
   },function(e){console.error('keys snapshot',e);});
 }
-if(window.FB&&FB.ready){FB.ready.then(function(ok){FB._ok=ok;if(ok){seedIfEmpty();subKeys();subOrders();subIssues();}else{console.warn('Firebase not ready — running on local mock data');}});}
+if(window.FB&&FB.ready){FB.ready.then(function(ok){FB._ok=ok;if(ok){seedIfEmpty();subKeys();subOrders();subIssues();loadSettings();}else{console.warn('Firebase not ready — running on local mock data');}});}
 </script>
 </body>
 </html>

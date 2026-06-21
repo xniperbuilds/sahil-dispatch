@@ -62,6 +62,8 @@ body{background:var(--bg);color:var(--txt);font-family:var(--body);display:flex;
 .tab .c{font:700 11px/1 var(--body);background:var(--panel2);color:var(--dim);padding:3px 8px;border-radius:20px;min-width:22px}
 .tab.on{background:var(--acc);color:#fff}.tab.on .c{background:rgba(255,255,255,.25);color:#fff}
 .pane{display:none;flex-direction:column;gap:13px}.pane.on{display:flex}
+.dtab{flex:1;border:1px solid var(--line2);background:var(--panel);color:var(--mut);cursor:pointer;font:700 13px/1 var(--body);padding:10px;border-radius:10px}
+.dtab.on{background:var(--acc);color:#fff;border-color:transparent}
 
 .ord{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:15px;display:flex;flex-direction:column;gap:12px}
 .ord .top{display:flex;align-items:center;gap:10px}
@@ -157,7 +159,7 @@ body{background:var(--bg);color:var(--txt);font-family:var(--body);display:flex;
   </div>
 
   <div class="body">
-    <div class="qbtn"><span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M9 13h6M9 17h4"/></svg></span><span data-i="viewQuote">View my quotation &amp; terms</span><span class="ar">›</span></div>
+    <div class="qbtn" onclick="openDocs()"><span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M9 13h6M9 17h4"/></svg></span><span data-i="viewQuote">View my quotation &amp; terms</span><span class="ar">›</span></div>
 
     <div id="confirmZone"></div>
 
@@ -173,6 +175,19 @@ body{background:var(--bg);color:var(--txt);font-family:var(--body);display:flex;
 </div>
 
 <div id="dtoast" style="position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--green);color:#04130d;font:700 13.5px/1 var(--body);padding:13px 20px;border-radius:12px;box-shadow:0 12px 30px -8px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:.25s;z-index:90"></div>
+
+<!-- QUOTATION & TERMS SHEET -->
+<div class="ov" id="docsov">
+  <div class="sheet">
+    <h3 data-i="viewQuote">Quotation &amp; Terms</h3>
+    <p id="docsQuote" style="color:var(--acc2);font-weight:700;margin-bottom:12px"></p>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="dtab on" data-dt="terms" onclick="setDocTab('terms')" data-i="t_terms">Terms &amp; Conditions</button>
+      <button class="dtab" data-dt="privacy" onclick="setDocTab('privacy')" data-i="t_privacy">Privacy</button>
+    </div>
+    <div id="docsBody" style="white-space:pre-wrap;font:500 13px/1.7 var(--body);color:var(--mut)"></div>
+  </div>
+</div>
 
 <!-- ISSUE SHEET -->
 <div class="ov" id="ov">
@@ -258,6 +273,13 @@ function companyConfirm(uid){
     b.commit().catch(function(e){console.error('confirm',e);});
   }
 }
+/* quotation & terms viewer (live from admin settings/global) */
+var DOCS={terms:'',privacy:''},docTab='terms',quoteName='';
+function loadDocs(){if(window.FB&&FB._ok){FB.db.collection('settings').doc('global').onSnapshot(function(d){if(d.exists){var x=d.data();DOCS.terms=x.terms||'';DOCS.privacy=x.privacy||'';if(document.getElementById('docsov').classList.contains('show'))renderDocs();}},function(){});}}
+function renderDocs(){var b=document.getElementById('docsBody');if(b)b.textContent=DOCS[docTab]||'—';document.querySelectorAll('.dtab').forEach(function(x){x.classList.toggle('on',x.getAttribute('data-dt')===docTab);});}
+function setDocTab(t){docTab=t;renderDocs();}
+function openDocs(){var q=document.getElementById('docsQuote');if(q)q.textContent=quoteName?('📄 '+quoteName):'';renderDocs();document.getElementById('docsov').classList.add('show');}
+document.getElementById('docsov').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
 function startCompany(name){
   compName=name;
   var rs=document.querySelector('.hdr .nm span');if(rs){rs.removeAttribute('data-i');rs.textContent=name;}
@@ -269,6 +291,7 @@ function startCompany(name){
       var arr=[];snap.forEach(function(d){arr.push(d.data());});arr.sort(function(a,b){return uidN(b.uid)-uidN(a.uid);});CORD=arr;renderCompany();compLoaded=true;
     },function(e){console.error('company orders',e);});
   } else {CORD=MOCKCO.slice();renderCompany();}
+  loadDocs();
 }
 function showBad(){var i=document.getElementById('loginKey');i.classList.add('bad');document.getElementById('loginErr').textContent=L().lBad;setTimeout(function(){i.classList.remove('bad');},400);}
 function finishLogin(code,name){
@@ -288,6 +311,7 @@ function doLogin(){
       var k=d.data(),already=false;try{already=localStorage.getItem('dispatch_company_key')===v;}catch(e){}
       if(!already&&(k.used||0)>=(k.total||1)){document.getElementById('loginErr').textContent=L().lUsed;return;}
       if(!already){FB.db.collection('keys').doc(v).update({used:(k.used||0)+1}).catch(function(){});}
+      quoteName=k.quote||'';
       finishLogin(v,k.name);
     }).catch(function(e){console.error('login',e);showBad();});
   } else { finishLogin(v,'ACME'); }

@@ -63,6 +63,8 @@ body{background:var(--bg);color:var(--txt);font-family:var(--body);display:flex;
 .tab .c{font:700 11px/1 var(--body);background:var(--panel2);color:var(--dim);padding:3px 8px;border-radius:20px;min-width:22px}
 .tab.on{background:var(--acc);color:#fff}.tab.on .c{background:rgba(255,255,255,.25);color:#fff}
 .pane{display:none;flex-direction:column;gap:13px}.pane.on{display:flex}
+.dtab{flex:1;border:1px solid var(--line2);background:var(--panel);color:var(--mut);cursor:pointer;font:700 13px/1 var(--body);padding:10px;border-radius:10px}
+.dtab.on{background:var(--acc);color:#fff;border-color:transparent}
 .empty{text-align:center;color:var(--dim);font:600 13px/1.5 var(--body);padding:40px 20px}
 
 /* trip card */
@@ -169,6 +171,19 @@ body{background:var(--bg);color:var(--txt);font-family:var(--body);display:flex;
     </div>
     <div class="pane on" id="p-active"></div>
     <div class="pane" id="p-done"></div>
+    <div style="text-align:center;padding:10px 0 4px"><span onclick="openDocs()" style="font:600 12.5px/1 var(--body);color:var(--dim);cursor:pointer;text-decoration:underline" data-i="viewTerms">Terms &amp; conditions</span></div>
+  </div>
+</div>
+
+<!-- TERMS SHEET -->
+<div class="ov" id="docsov">
+  <div class="sheet">
+    <h3 data-i="viewTerms">Terms &amp; conditions</h3>
+    <div style="display:flex;gap:8px;margin:10px 0 14px">
+      <button class="dtab on" data-dt="terms" onclick="setDocTab('terms')">Terms</button>
+      <button class="dtab" data-dt="privacy" onclick="setDocTab('privacy')">Privacy</button>
+    </div>
+    <div id="docsBody" style="white-space:pre-wrap;font:500 13px/1.7 var(--body);color:var(--mut)"></div>
   </div>
 </div>
 
@@ -188,9 +203,9 @@ body{background:var(--bg);color:var(--txt);font-family:var(--body);display:flex;
 
 <script>
 var I={
- en:{role:"Driver",newReq:"New trip request",yourRent:"Your rent",accept:"Accept",reject:"Reject",tabActive:"Active",tabDone:"Completed",st_load:"Loaded",st_acc:"Accepted",st_reach:"Reached",st_done:"Completed",mark_move:'Mark "On the way"',mark_load:'Mark "Loaded"',mark_unload:'Mark "Unloaded"',problem:"Extra / Problem",call:"Call office",doneAt:"Unloaded · 19 Jun, 4:20 PM",doneAt2:"Unloaded · 19 Jun, 11:05 AM",reportTitle:"Report a problem",reportSub:"Pick what's wrong, then describe it (required).",mandatory:"⚠️ Writing the details is required.",sendIssue:"Send to office",issuePh:"Describe the issue… (required)",lWelcome:"Driver App",lSub:"Enter the access key your office gave you. Your trips set up automatically.",lLabel:"Access key",lEnter:"Enter",lDemo:"No key?",lDemoB:"Try a demo key",lFoot:"Sahil Al Nojoom · Transport Dispatch",lBad:"That key isn't valid. Check it and try again.",lPh:"SAN-DR-XXXX-XXXX",mark_reach:'Mark "Reached"',st_move:"On the way",lUsed:"This key is already used on the maximum number of devices.",noActive:"No active trips right now.",noDone:"No completed trips yet.",opts:["Extra delivery / extra KM","Wrong amount","Wrong destination","Wrong truck type","Truck / vehicle problem","This order is wrong","Other"]},
- ur:{role:"ڈرائیور",newReq:"نئی ٹرپ",yourRent:"آپ کا کرایہ",accept:"قبول",reject:"منع",tabActive:"جاری",tabDone:"مکمل",st_load:"لوڈ ہو گیا",st_acc:"قبول",st_reach:"پہنچ گیا",st_done:"مکمل",mark_move:'"چل پڑی" لگائیں',mark_load:'"لوڈ ہو گیا" لگائیں',mark_unload:'"خالی ہو گیا" لگائیں',problem:"اضافی / مسئلہ",call:"دفتر کال",doneAt:"خالی ہوا · 19 جون، 4:20 PM",doneAt2:"خالی ہوا · 19 جون، 11:05 AM",reportTitle:"مسئلہ بتائیں",reportSub:"مسئلہ منتخب کریں، پھر تفصیل لکھیں (ضروری).",mandatory:"⚠️ تفصیل لکھنا ضروری ہے۔",sendIssue:"دفتر بھیجیں",issuePh:"مسئلہ لکھیں… (ضروری)",lWelcome:"ڈرائیور ایپ",lSub:"دفتر کی دی ہوئی رسائی کلید درج کریں۔ آپ کی ٹرپس خود سیٹ ہو جائیں گی۔",lLabel:"رسائی کلید",lEnter:"داخل ہوں",lDemo:"کلید نہیں؟",lDemoB:"ڈیمو کلید آزمائیں",lFoot:"ساحل النجوم · ٹرانسپورٹ ڈسپیچ",lBad:"یہ کلید درست نہیں۔ دوبارہ کوشش کریں۔",lPh:"SAN-DR-XXXX-XXXX",mark_reach:'"پہنچ گیا" لگائیں',st_move:"راستے میں",lUsed:"یہ کلید پہلے ہی زیادہ سے زیادہ ڈیوائسز پر استعمال ہو چکی ہے۔",noActive:"ابھی کوئی جاری ٹرپ نہیں۔",noDone:"ابھی کوئی مکمل ٹرپ نہیں۔",opts:["اضافی ڈلیوری / اضافی کلومیٹر","غلط رقم","غلط منزل","غلط ٹرک ٹائپ","ٹرک / گاڑی کا مسئلہ","یہ آرڈر غلط ہے","دیگر"]},
- ar:{role:"سائق",newReq:"طلب رحلة جديدة",yourRent:"أجرتك",accept:"قبول",reject:"رفض",tabActive:"نشطة",tabDone:"مكتملة",st_load:"تم التحميل",st_acc:"مقبول",st_reach:"وصل",st_done:"مكتمل",mark_move:'تحديد "في الطريق"',mark_load:'تحديد "تم التحميل"',mark_unload:'تحديد "تم التفريغ"',problem:"إضافي / مشكلة",call:"اتصل بالمكتب",doneAt:"تم التفريغ · 19 يونيو، 4:20 م",doneAt2:"تم التفريغ · 19 يونيو، 11:05 ص",reportTitle:"الإبلاغ عن مشكلة",reportSub:"اختر المشكلة ثم اكتب التفاصيل (مطلوب).",mandatory:"⚠️ كتابة التفاصيل مطلوبة.",sendIssue:"إرسال إلى المكتب",issuePh:"اكتب المشكلة… (مطلوب)",lWelcome:"تطبيق السائق",lSub:"أدخل مفتاح الدخول الذي أعطاك إياه المكتب. ستُعد رحلاتك تلقائيًا.",lLabel:"مفتاح الدخول",lEnter:"دخول",lDemo:"لا يوجد مفتاح؟",lDemoB:"جرّب مفتاحًا تجريبيًا",lFoot:"ساحل النجوم · إرسال النقل",lBad:"هذا المفتاح غير صالح. حاول مرة أخرى.",lPh:"SAN-DR-XXXX-XXXX",mark_reach:'تحديد "وصل"',st_move:"في الطريق",lUsed:"تم استخدام هذا المفتاح بالفعل على الحد الأقصى من الأجهزة.",noActive:"لا توجد رحلات نشطة حاليًا.",noDone:"لا توجد رحلات مكتملة بعد.",opts:["توصيل إضافي / كيلومترات إضافية","مبلغ خاطئ","وجهة خاطئة","نوع شاحنة خاطئ","مشكلة في الشاحنة","هذا الطلب خاطئ","أخرى"]}
+ en:{role:"Driver",newReq:"New trip request",yourRent:"Your rent",accept:"Accept",reject:"Reject",tabActive:"Active",tabDone:"Completed",st_load:"Loaded",st_acc:"Accepted",st_reach:"Reached",st_done:"Completed",mark_move:'Mark "On the way"',mark_load:'Mark "Loaded"',mark_unload:'Mark "Unloaded"',problem:"Extra / Problem",call:"Call office",doneAt:"Unloaded · 19 Jun, 4:20 PM",doneAt2:"Unloaded · 19 Jun, 11:05 AM",reportTitle:"Report a problem",reportSub:"Pick what's wrong, then describe it (required).",mandatory:"⚠️ Writing the details is required.",sendIssue:"Send to office",issuePh:"Describe the issue… (required)",lWelcome:"Driver App",lSub:"Enter the access key your office gave you. Your trips set up automatically.",lLabel:"Access key",lEnter:"Enter",lDemo:"No key?",lDemoB:"Try a demo key",lFoot:"Sahil Al Nojoom · Transport Dispatch",lBad:"That key isn't valid. Check it and try again.",lPh:"SAN-DR-XXXX-XXXX",mark_reach:'Mark "Reached"',st_move:"On the way",lUsed:"This key is already used on the maximum number of devices.",noActive:"No active trips right now.",noDone:"No completed trips yet.",viewTerms:"Terms & conditions",opts:["Extra delivery / extra KM","Wrong amount","Wrong destination","Wrong truck type","Truck / vehicle problem","This order is wrong","Other"]},
+ ur:{role:"ڈرائیور",newReq:"نئی ٹرپ",yourRent:"آپ کا کرایہ",accept:"قبول",reject:"منع",tabActive:"جاری",tabDone:"مکمل",st_load:"لوڈ ہو گیا",st_acc:"قبول",st_reach:"پہنچ گیا",st_done:"مکمل",mark_move:'"چل پڑی" لگائیں',mark_load:'"لوڈ ہو گیا" لگائیں',mark_unload:'"خالی ہو گیا" لگائیں',problem:"اضافی / مسئلہ",call:"دفتر کال",doneAt:"خالی ہوا · 19 جون، 4:20 PM",doneAt2:"خالی ہوا · 19 جون، 11:05 AM",reportTitle:"مسئلہ بتائیں",reportSub:"مسئلہ منتخب کریں، پھر تفصیل لکھیں (ضروری).",mandatory:"⚠️ تفصیل لکھنا ضروری ہے۔",sendIssue:"دفتر بھیجیں",issuePh:"مسئلہ لکھیں… (ضروری)",lWelcome:"ڈرائیور ایپ",lSub:"دفتر کی دی ہوئی رسائی کلید درج کریں۔ آپ کی ٹرپس خود سیٹ ہو جائیں گی۔",lLabel:"رسائی کلید",lEnter:"داخل ہوں",lDemo:"کلید نہیں؟",lDemoB:"ڈیمو کلید آزمائیں",lFoot:"ساحل النجوم · ٹرانسپورٹ ڈسپیچ",lBad:"یہ کلید درست نہیں۔ دوبارہ کوشش کریں۔",lPh:"SAN-DR-XXXX-XXXX",mark_reach:'"پہنچ گیا" لگائیں',st_move:"راستے میں",lUsed:"یہ کلید پہلے ہی زیادہ سے زیادہ ڈیوائسز پر استعمال ہو چکی ہے۔",noActive:"ابھی کوئی جاری ٹرپ نہیں۔",noDone:"ابھی کوئی مکمل ٹرپ نہیں۔",viewTerms:"شرائط و ضوابط",opts:["اضافی ڈلیوری / اضافی کلومیٹر","غلط رقم","غلط منزل","غلط ٹرک ٹائپ","ٹرک / گاڑی کا مسئلہ","یہ آرڈر غلط ہے","دیگر"]},
+ ar:{role:"سائق",newReq:"طلب رحلة جديدة",yourRent:"أجرتك",accept:"قبول",reject:"رفض",tabActive:"نشطة",tabDone:"مكتملة",st_load:"تم التحميل",st_acc:"مقبول",st_reach:"وصل",st_done:"مكتمل",mark_move:'تحديد "في الطريق"',mark_load:'تحديد "تم التحميل"',mark_unload:'تحديد "تم التفريغ"',problem:"إضافي / مشكلة",call:"اتصل بالمكتب",doneAt:"تم التفريغ · 19 يونيو، 4:20 م",doneAt2:"تم التفريغ · 19 يونيو، 11:05 ص",reportTitle:"الإبلاغ عن مشكلة",reportSub:"اختر المشكلة ثم اكتب التفاصيل (مطلوب).",mandatory:"⚠️ كتابة التفاصيل مطلوبة.",sendIssue:"إرسال إلى المكتب",issuePh:"اكتب المشكلة… (مطلوب)",lWelcome:"تطبيق السائق",lSub:"أدخل مفتاح الدخول الذي أعطاك إياه المكتب. ستُعد رحلاتك تلقائيًا.",lLabel:"مفتاح الدخول",lEnter:"دخول",lDemo:"لا يوجد مفتاح؟",lDemoB:"جرّب مفتاحًا تجريبيًا",lFoot:"ساحل النجوم · إرسال النقل",lBad:"هذا المفتاح غير صالح. حاول مرة أخرى.",lPh:"SAN-DR-XXXX-XXXX",mark_reach:'تحديد "وصل"',st_move:"في الطريق",lUsed:"تم استخدام هذا المفتاح بالفعل على الحد الأقصى من الأجهزة.",noActive:"لا توجد رحلات نشطة حاليًا.",noDone:"لا توجد رحلات مكتملة بعد.",viewTerms:"الشروط والأحكام",opts:["توصيل إضافي / كيلومترات إضافية","مبلغ خاطئ","وجهة خاطئة","نوع شاحنة خاطئ","مشكلة في الشاحنة","هذا الطلب خاطئ","أخرى"]}
 };
 var LANGS=["en","ur","ar"],li=0;
 function setLang(l){
@@ -270,6 +285,7 @@ function startDriver(name){
       var arr=[];snap.forEach(function(d){arr.push(d.data());});arr.sort(function(a,b){return uidN(b.uid)-uidN(a.uid);});DTRIPS=arr;renderDriver();driverLoaded=true;
     },function(e){console.error('driver trips',e);});
   } else {DTRIPS=MOCKTRIPS.slice();renderDriver();}
+  loadDocs();
 }
 function showBad(){var i=document.getElementById('loginKey');i.classList.add('bad');document.getElementById('loginErr').textContent=L().lBad;setTimeout(function(){i.classList.remove('bad');},400);}
 function finishLogin(code,name){
@@ -323,6 +339,13 @@ function sendIssue(){
   dtoast(SENT[LANGS[li]]||SENT.en);
 }
 document.getElementById('ov').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
+/* terms viewer (live from admin settings/global) */
+var DOCS={terms:'',privacy:''},docTab='terms';
+function loadDocs(){if(window.FB&&FB._ok){FB.db.collection('settings').doc('global').onSnapshot(function(d){if(d.exists){var x=d.data();DOCS.terms=x.terms||'';DOCS.privacy=x.privacy||'';if(document.getElementById('docsov').classList.contains('show'))renderDocs();}},function(){});}}
+function renderDocs(){var b=document.getElementById('docsBody');if(b)b.textContent=DOCS[docTab]||'—';document.querySelectorAll('.dtab').forEach(function(x){x.classList.toggle('on',x.getAttribute('data-dt')===docTab);});}
+function setDocTab(t){docTab=t;renderDocs();}
+function openDocs(){renderDocs();document.getElementById('docsov').classList.add('show');}
+document.getElementById('docsov').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
 (function(){var r=document.documentElement,t='dark';try{t=localStorage.getItem('dispatch_theme')||'dark';}catch(e){}r.setAttribute('data-theme',t);document.getElementById('themeBtn').addEventListener('click',function(){var n=r.getAttribute('data-theme')==='light'?'dark':'light';r.setAttribute('data-theme',n);try{localStorage.setItem('dispatch_theme',n);}catch(e){}});})();
 setLang('en');
 </script>
